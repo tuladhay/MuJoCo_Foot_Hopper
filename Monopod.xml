@@ -1,0 +1,56 @@
+<mujoco model='Monopod'>
+  <compiler inertiafromgeom='false' angle='degree' eulerseq='zyx'/>
+  <size nuser_actuator='1' nuser_sensor='1' nuser_geom='1'/>
+  <option timestep='0.0005' iterations='50' solver='PGS' gravity='0 0 -9.81'/>
+  <!-- Timestep is set to 0.0005 because our controller runs at 2 kHz -->
+  <!-- Larger values still have stable dynamics -->
+
+  <visual>
+    <quality shadowsize='4096'/>
+    <map znear='0.05'/>
+  </visual>
+
+
+
+  <worldbody>
+    <geom name='floor' pos='0 0 0' size='5 5 .125' type='plane' condim='3' conaffinity='7'/>
+
+    <light mode='trackcom' pos='0 0 5' dir='0 0 -1'/>
+    <light directional='true' pos='0 0 3' dir='0 0 -1' diffuse='0.2 0.2 0.2' specular='0 0 0'/>
+    <camera name='trackcom' pos='0 -3 2' zaxis='0 -1 0.5' mode='trackcom'/>
+
+    <body name='body' pos='0 0 1'>
+        <joint name='rootx' type='slide' axis='1 0 0' pos='0 0 0' limited='false' damping='0' armature='0' stiffness='0' />
+        <joint name='rootz' type='slide' axis='0 0 1' pos='0 0 0' limited='false' damping='0' armature='0' stiffness='0' ref='1'/>
+        <joint name='rot' type='hinge' axis='0 1 0' pos='0 0 0' limited='false' damping='0' armature='0' stiffness='0' />
+        <inertial pos='0 0 0' mass='20' diaginertia = '0.2 0.2 0.2'/>
+        <geom type='sphere' size='0.1' pos='0 0 0' rgba='0.9 0.5 0.1 1'/>
+        <body name='leg' pos='0 0 0'>
+            <geom name="leg_geom"  type="capsule" contype='0' conaffinity='2' fromto="0 0 0 0 0 -0.2" size="0.04" friction="0.9" rgba="0.1 0.7 0.2 1" />
+            <joint name='leg_tau' type='hinge' axis='0 1 0' limited='true' range='-25 25' damping='2' armature='0.038125'/>
+            <inertial pos='0 0 -0.1' mass='1' diaginertia = '0.01 0.01 0.01'/>
+            <joint name='leg_motor' type='slide' axis='0 0 -1' limited='true'  range='0.35 0.6' armature='30' ref='0.4'/>
+            
+	    <body name='toe' pos='0 0 -0.4' >
+                <geom type='sphere' size='0.05' pos='0 0 0' friction="0.1" rgba ='0.9 0.5 0.1 1'/>
+                <inertial pos='0 0 0' mass='1' diaginertia = '0.01 0.01 0.01'/>
+                <joint name='leg_spring' type='slide' stiffness='10000' damping='10' limited='true' range='-0.3 0.3'/>
+		
+		<body name="foot" pos="0 0 -0.05">
+            		<joint name="foot_joint" type="hinge" pos="0 0 0" axis="0 -1 0" range="-45 45" />
+            		<geom name="foot_geom" type="capsule" fromto="-0.1 0 0 0.1 0 0" size="0.02" friction="2.0" />
+			<site name="foot_heel" type="sphere" pos="-0.11 0 -0.02" size="0.015"/>
+			<site name="foot_toe" type="sphere" pos="0.11 0 -0.02" size="0.015"/>
+          	</body>
+
+            </body>
+        </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor joint='leg_tau' ctrlrange='-50 50' ctrllimited='true' />
+    <motor joint='leg_motor' ctrlrange='-300 300' ctrllimited='true' />
+    <motor joint="foot_joint" ctrlrange="-100.0 100.0" ctrllimited="true" />
+  </actuator>
+</mujoco>

@@ -1,0 +1,49 @@
+CC     := x86_64-w64-mingw32-gcc
+LD      := $(CC)
+
+INC     := -Isrc -Imjpro150/include
+CFLAGS  := -std=gnu11 -Wall -Wextra -Wpedantic -O3 -ffast-math -march=native
+LDFLAGS := -shared -L./mjpro150/bin
+LIBS    := -lmujoco150 -lglfw3
+OUT     := slip.dll
+
+SRC     := $(wildcard src/*.c)
+OBJ     := $(patsubst src/%.c,obj/%.o,$(SRC))
+
+vpath %.c src
+
+define make-goal
+$1/%.o: %.c
+	$(CC) $(CFLAGS) $(INC) -MMD -c $$< -o $$@
+endef
+
+all: checkdirs lib test
+
+clean:
+	rm -f $(OUT)
+	rm -rf obj/
+	rm -f slip.lib
+	rm -f test.exe
+	rm -f cassiesim.h
+	rm -f mujoco150.dll
+	rm -f glfw3.dll
+
+test: lib
+	$(CC) main.c $(INC) -L. -lslip -lm -o test.exe
+
+lib: $(OBJ)
+	$(LD) $^ -o $(OUT) $(LDFLAGS) $(LIBS)
+	cp ./src/slip.h ./
+	cp ./mjpro150/bin/mujoco150.dll ./
+	cp ./mjpro150/bin/glfw3.dll ./
+
+checkdirs: obj
+
+obj:
+	@mkdir -p $@
+
+$(foreach bdir,obj,$(eval $(call make-goal,$(bdir))))
+
+.PHONY: all checkdirs clean
+
+-include $(OBJ:%.o=%.d)
