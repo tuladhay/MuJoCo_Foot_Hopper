@@ -10,6 +10,8 @@ classdef SLIP < handle
         nU = 3;
         libName;
         deltaT = 0.002;
+        
+        flight_time;
     end
     
     methods
@@ -33,6 +35,7 @@ classdef SLIP < handle
             if(enableVisuals == 1)
                 obj.v = calllib(obj.libName, 'vis_init');
             end
+            
            
         end   
         

@@ -18,6 +18,9 @@ typedef struct state_t {
 	double cpos[nC];
 	int dynamic_state;		// this is for the raibert hopper control
 	double des_td_angle;
+	double touchdown_time;
+	double stance_time;
+	double apex_velocity;
 } state_t;
 
 
