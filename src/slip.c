@@ -253,7 +253,7 @@ void controller(slip_t* s, state_t* state)
 	double gain_Kd_L0 = 1000;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.15;		// 0.1 worked well for fixed flight time
+	double gain_footDisp = 0.22;		// 0.1 worked well for fixed flight time
 
 	double gain_Kp_hip = 2000;
 	double gain_Kd_hip = 200;
@@ -262,6 +262,7 @@ void controller(slip_t* s, state_t* state)
 	double L_extension = 0.52;			// 0.55 worked well for fixed flight time
 	double xf_Point = 0;
 	double rest_leg_length = 1.0;
+	bool toe_bias = true;
 
 	// 1 = compression
 	// 2 = thrust
@@ -292,9 +293,21 @@ void controller(slip_t* s, state_t* state)
 			if (  (state->cpos[0] > 0.01)   &&   (state->cpos[1] > 0.01))
 			{
 				state->dynamic_state = 3;
-				// Calculate the desired touchdown angle
-				//xf_Point = (0.5*(state->qd[0])*0.225) + gain_footDisp*(state->qd[0] - des_velocity);		// 0.225 is a guess for flight time
-				xf_Point = (0.5*(state->qd[0])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity);		// 0.225 is a guess for flight time
+
+				state->stance_time = s->d->time - state->touchdown_time;
+
+				// Calculate the desired touchdown angle depending on whether you want to account for toe bias
+				// Adding bias reduces velocity tracking error. I think this is because due to the added foot, the toe touched the ground first, however,
+				// the Raibert Controller assumes that it is the mid of the foot (point feet)
+				if (toe_bias)
+				{
+					xf_Point = (0.5*(state->qd[0])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity)  -  0.01;		// Toe touchdown bias
+				}
+				else
+				{
+					xf_Point = (0.5*(state->qd[0])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity);				// NO BIAS
+				}
+				
 				state->des_td_angle = asin(xf_Point/rest_leg_length);
 
 				if (state->des_td_angle > 0.25)		// approx 20 degrees
@@ -307,7 +320,6 @@ void controller(slip_t* s, state_t* state)
 				state->dynamic_state = 3;
 
 				// Update stance time, and use this for next calculation of touchdown angle
-				state->stance_time = s->d->time - state->touchdown_time;
 
 				flag = true;	// flag to update the apex velocity
 				break;

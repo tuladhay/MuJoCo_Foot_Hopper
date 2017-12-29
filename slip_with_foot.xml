@@ -53,7 +53,7 @@
   </worldbody>
   
   <actuator>
-    <motor joint="leg_tau" ctrlrange="-500.0 500.0" ctrllimited="true" />
+    <motor joint="leg_tau" ctrlrange="-1500.0 1500.0" ctrllimited="true" />
     <motor joint="leg_motor" ctrlrange="-2000.0 2000.0" ctrllimited="true" />
     <motor joint="foot_joint" ctrlrange="-500.0 500.0" ctrllimited="true" />
   </actuator>

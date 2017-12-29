@@ -4,7 +4,7 @@ close all
 addpath('src');
 addpath('controllers');
 
-slipObj = SLIP(1);
+slipObj = SLIP(0);
 
 nStep = 15000;
 q = zeros(7,nStep);        % to store output
