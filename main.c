@@ -54,17 +54,35 @@ int main()
 		printf("%f\t", state->qdd[i]);
 	printf("\n");
 
-	while (true){
+// 	while (true)
+// 	{
 
+// 		vis_draw(v, s, false);
+// //		forward(s, state);
+// 		mjtNum simstart = s->d->time;
+		
+// 		while( s->d->time - simstart < 1.0/60.0 )
+// 		{
+//         	step(s, 0);
+// 		}
+
+
+// 	}
+
+	// for (int i = 0; i < 2000; i++)
+	// {	
+	// 	printf("\nTimestep: %d,  height: %f ", i, state->q[1]);
+	// 	step(s, 0);
+	// 	vis_draw(v, s, false);
+	// }
+
+
+	while (true)
+	{
 		vis_draw(v, s, false);
-//		forward(s, state);
-	//	mjtNum simstart = s->d->time;
-	//	while( s->d->time - simstart < 1.0/60.0 ){
-            step(s, state);
-	//	}
-
-
+        step(s, 0.0);
 	}
+
 
 	vis_close(v);
 

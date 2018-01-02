@@ -11,6 +11,7 @@ classdef SLIP < handle
         libName;
         deltaT = 0.002;
         
+        action = 0;
         flight_time;
     end
     
@@ -30,7 +31,7 @@ classdef SLIP < handle
             loadlibrary(obj.libName,'src/slip.h');
             
             obj.s = calllib(obj.libName,'init','.');
-            obj.st = libpointer('state_t',blank_state(obj));
+            %obj.st = libpointer('state_t',blank_state(obj));
             obj.v = [];
             if(enableVisuals == 1)
                 obj.v = calllib(obj.libName, 'vis_init');
@@ -45,32 +46,32 @@ classdef SLIP < handle
         end
         
         function step(obj)
-            calllib(obj.libName, 'step', obj.s, obj.st);
+            calllib(obj.libName, 'step', obj.s, 1000.0);
         end
         
         
-        function set_dynamic_state(obj)
-            calllib(obj.libName, 'set_dynamic_state', obj.st);
-        end
-        
-        
-        function controller(obj)
-            calllib(obj.libName, 'controller', obj.s, obj.st);
-        end
+%         function set_dynamic_state(obj)
+%             calllib(obj.libName, 'set_dynamic_state', obj.st);
+%         end
+%         
+%         
+%         function controller(obj)
+%             calllib(obj.libName, 'controller', obj.s, obj.st);
+%         end
         
         
         function state = get_state(obj)
-            state = obj.st.Value;
+            state = obj.s.Value;
         end
         
-        function dynamic_state = get_dynamic_state(obj)
-            dynamic_state = obj.st.Value.dynamic_state;
-        end
-        
-        
-        function des_td_angle = get_des_td_angle(obj)
-            des_td_angle = obj.st.Value.des_td_angle;
-        end
+%         function dynamic_state = get_dynamic_state(obj)
+%             dynamic_state = obj.st.Value.dynamic_state;
+%         end
+%         
+%         
+%         function des_td_angle = get_des_td_angle(obj)
+%             des_td_angle = obj.st.Value.des_td_angle;
+%         end
         
         
 %         function contact_pos = get_contact_pos(obj)
@@ -132,7 +133,7 @@ classdef SLIP < handle
                 
         function rendered = draw(obj)
             if ~isempty(obj.v)
-                rendered = calllib(obj.libName, 'vis_draw', obj.v, obj.s,0);
+                rendered = calllib(obj.libName, 'vis_draw', obj.v, obj.s, 0);
             end
         end
         
