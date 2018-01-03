@@ -56,18 +56,17 @@ class footHopperEnv(Env):
 
         self.nA = 1		# number of controllable parameters for rl
         self.nS = 8		# number of inputs to feed to rl
-        self.nSO = 3
 
         self.action = np.zeros(self.nA, dtype=np.double)        # inputs to step function in c
         self.state = np.zeros(self.nS, dtype=np.double)         # inputs to feed rl observation
 
-        self.stats_keys = {'VelocityTracking', 'Torque', 'Complete'}
         self.state_keys = {'x','z','xd','zd','tau_motor_pos','foot_motor_pos','foot_heel_pos','foot_toe_pos'}
         # height tracking might be redundant if minimum torque is also an objective
 
         # Debugging variables
         self.reward = 0.0
         self.done = False
+        self.counter = 0
 
     def reset(self):
         # Resets the state of the environment, returning an initial observation.
@@ -96,25 +95,24 @@ class footHopperEnv(Env):
         # done : boolean, indicating whether the episode has ended
         # info : a dictionary containing other diagnostic information from the previous action
 
-        # self.stats = np.zeros(self.nSO, dtype=np.double)            # reset stats
-
         # Execute one time-step using action
         # self.action = np.ones(self.nA, dtype=np.double)*250*(-1)    # for testing use self.action in hopper_step
-        hopper_step(self.s, ctypes.c_double(action))
+        for _ in range(10):
+            hopper_step(self.s, ctypes.c_double(action))
 
         # Observations
         hopper_obs(self.s, self.state.ctypes.data_as(c_double_p))  # this is supposed to update self.state
         
         # Set the DONE flag
         done = False
-        if (self.state[1] < 0.6):
+        if (self.state[1] < 0.85):
             done = True
         self.done = done                # to check from outside
 
         # Rewards
-        weight_vel_tracking = 1e-1
+        weight_vel_tracking = 1
         weight_torque = 1e-4            # torque for foot motor
-        target_vel = 2                  # m/s
+        target_vel = 2.0                # m/s
 
         r = 0.0                         # Even though set to 0 here. I think rllab will add the rewards
         if not done:
@@ -128,14 +126,19 @@ class footHopperEnv(Env):
         # weight_hei_tracking = 1e-4
         # however, height tracking can be redundant if min torque is also an objective
 
-        hopper_draw(self.v, self.s, self.wait)
+        # if self.counter % 10 == 0:
+        # hopper_draw(self.v, self.s, self.wait)
+            # self.counter += 1
 
-        self.reward = r
-        # print r
+        # self.reward = r
+        # print r[0]
         # print self.state[6]
-        print action
-        print done
-        return Step(observation=self.state, reward=r, done=done)
+        # print action
+        # print done
+        return Step(observation=self.state, reward=r[0], done=done)
+
+    def render(self):
+        hopper_draw(self.v, self.s, self.wait)
 
     @cached_property
     def observation_space(self):
@@ -145,6 +148,7 @@ class footHopperEnv(Env):
 
     @cached_property
     def action_space(self):
+
         high = np.array([500.0])    # foot motor max torque
         low = np.array([-500.0])    # foot motor min torque
         return Box(low, high)
