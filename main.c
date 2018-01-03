@@ -80,7 +80,7 @@ int main()
 	while (true)
 	{
 		vis_draw(v, s, false);
-        step(s, 0.0);
+        step(s, 500.0);
 	}
 
 
