@@ -5,6 +5,7 @@ from rllab.envs.base import Env
 from rllab.envs.base import Step
 from rllab.spaces import Box
 from cached_property import cached_property
+
 import time
 
 # This file is creating an environment for the SLIP hopper with foot.
@@ -51,11 +52,11 @@ class footHopperEnv(Env):
 
     def __init__(self):
         self.s = hopper_init('.')           # returns mjdata struct
-        self.v = hopper_vis()               # returns vis_init struct
+        #self.v = hopper_vis()               # returns vis_init struct
         self.wait = False                   # visualization wait for user argument
 
-        self.nA = 1		# number of controllable parameters for rl
-        self.nS = 8		# number of inputs to feed to rl
+        self.nA = 1		                    # number of controllable parameters for rl
+        self.nS = 8		                    # number of inputs to feed to rl
 
         self.action = np.zeros(self.nA, dtype=np.double)        # inputs to step function in c
         self.state = np.zeros(self.nS, dtype=np.double)         # inputs to feed rl observation
@@ -67,6 +68,7 @@ class footHopperEnv(Env):
         self.reward = 0.0
         self.done = False
         self.counter = 0
+        self.action_prev = self.action      # so that they are the same type
 
     def reset(self):
         # Resets the state of the environment, returning an initial observation.
@@ -74,13 +76,10 @@ class footHopperEnv(Env):
         # Outputs
         # -------
         # observation : the initial observation of the space. (Initial reward is assumed to be 0.)
-        # self.state = np.array([0.0, 1.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # need to add dynamic state
-        # the cpos are set to 0, but this is not correct, so,
-        # Make a c function that resets these states (by passing a pointer?)
 
-        hopper_reset(self.s)            # calls set_initial_state()
+        hopper_reset(self.s)                                        # calls set_initial_state()
         self.action = np.zeros(self.nA, dtype=np.double)
-        hopper_step(self.s, ctypes.c_double(0.0))      # just to get the first state
+        hopper_step(self.s, ctypes.c_double(0.0))                   # just to get the first state
         hopper_obs(self.s, self.state.ctypes.data_as(c_double_p))   # send state data in array
 
         temp = np.copy(self.state)
@@ -93,10 +92,8 @@ class footHopperEnv(Env):
         # observation: agent's observation of the current environment
         # reward [float] : amount of reward due to the previous action
         # done : boolean, indicating whether the episode has ended
-        # info : a dictionary containing other diagnostic information from the previous action
 
-        # Execute one time-step using action
-        # self.action = np.ones(self.nA, dtype=np.double)*250*(-1)    # for testing use self.action in hopper_step
+        # Execute one or many time-step/s using action
         for _ in range(10):
             hopper_step(self.s, ctypes.c_double(action))
 
@@ -110,34 +107,36 @@ class footHopperEnv(Env):
         self.done = done                # to check from outside
 
         # Rewards
-        weight_vel_tracking = 1
+        weight_vel_tracking = 10
         weight_torque = 1e-4            # torque for foot motor
-        target_vel = 2.0                # m/s
+        target_vel = 1.65                # m/s
+        weight_jerkiness = 1e-5
+        weight_neg_direction = 100
 
-        r = 0.0                         # Even though set to 0 here. I think rllab will add the rewards
+        r = 0.0                         # Even though set to 0 here, rllab will add the rewards
         if not done:
             r += 1                      # reward for staying alive
 
         r -= weight_vel_tracking * np.square( np.absolute(target_vel - self.state[2]) )       # may need to square the error
         r -= weight_torque * np.absolute(action)       # action is the foot torque
+        r -= weight_jerkiness * np.square(self.action_prev - action)      # for smooth ankle torque profiles
+
+        if self.state[2] < 0:
+            r -= weight_neg_direction * np.absolute(self.state[2])   # if x vel is negative
+
+        self.action_prev = action
 
         # TODO:
         # In state_t, also add the apex height so that it can be used as tracking in objective
-        # weight_hei_tracking = 1e-4
-        # however, height tracking can be redundant if min torque is also an objective
+        # However, height tracking can be redundant if min torque is also an objective
 
-        # if self.counter % 10 == 0:
-        # hopper_draw(self.v, self.s, self.wait)
-            # self.counter += 1
-
-        # self.reward = r
-        # print r[0]
-        # print self.state[6]
-        # print action
-        # print done
         return Step(observation=self.state, reward=r[0], done=done)
 
     def render(self):
+        if self.counter == 0:
+            self.v = hopper_vis()
+            self.counter = 1
+
         hopper_draw(self.v, self.s, self.wait)
 
     @cached_property
@@ -149,8 +148,8 @@ class footHopperEnv(Env):
     @cached_property
     def action_space(self):
 
-        high = np.array([500.0])    # foot motor max torque
-        low = np.array([-500.0])    # foot motor min torque
+        high = np.array([100.0])    # foot motor max torque
+        low = np.array([-100.0])    # foot motor min torque
         return Box(low, high)
 
 
@@ -161,6 +160,7 @@ class footHopperEnv(Env):
 # for _ in range(2000):
 #     print('Action = ' + str(hopper.action) + ', Reward = ' + str(hopper.reward))
 #     result = hopper.step(hopper.action)
+#     hopper.render()
 #     if _ == 500:
 #         hopper.reset()
 #         print("Resetting")

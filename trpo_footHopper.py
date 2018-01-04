@@ -4,6 +4,7 @@ from footHopper_env import footHopperEnv
 from rllab.envs.normalized_env import normalize
 from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
 from rllab.misc.instrument import run_experiment_lite
+import gym
 
 
 def run_task(*_):
@@ -18,10 +19,10 @@ def run_task(*_):
         env=env,
         policy=policy,
         baseline=baseline,
-        n_itr=40,
+        n_itr=1000,
         discount=0.99,
         batch_size=4000,
-        max_path_length=2000,
+        max_path_length=500,
         render=True,
     )
     algo.train()
@@ -36,6 +37,6 @@ run_experiment_lite(
     # Specifies the seed for the experiment. If this is not provided, a random seed
     # will be used
     seed=1,
-    #plot=True,
     log_dir='log',
 )
+
