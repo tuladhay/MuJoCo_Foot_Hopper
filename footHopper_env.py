@@ -107,11 +107,12 @@ class footHopperEnv(Env):
         self.done = done                # to check from outside
 
         # Rewards
-        weight_vel_tracking = 10
-        weight_torque = 1e-4            # torque for foot motor
+        weight_vel_tracking = 1e-3
+        weight_torque = 0.05            # torque for foot motor
         target_vel = 1.65                # m/s
-        weight_jerkiness = 1e-5
+        weight_jerkiness = 1e-4
         weight_neg_direction = 100
+        weight_normal_foot_pos = 1
 
         r = 0.0                         # Even though set to 0 here, rllab will add the rewards
         if not done:
@@ -119,10 +120,13 @@ class footHopperEnv(Env):
 
         r -= weight_vel_tracking * np.square( np.absolute(target_vel - self.state[2]) )       # may need to square the error
         r -= weight_torque * np.absolute(action)       # action is the foot torque
-        r -= weight_jerkiness * np.square(self.action_prev - action)      # for smooth ankle torque profiles
-
-        if self.state[2] < 0:
-            r -= weight_neg_direction * np.absolute(self.state[2])   # if x vel is negative
+        # r -= weight_jerkiness * np.absolute(self.action_prev - action)      # for smooth ankle torque profiles
+        # r -= weight_neg_direction * np.absolute(self.state[5])
+        if self.state[2] > 0:
+            r += 1
+        r -= 1.23 - self.state[1]
+        # if self.state[2] < 0:
+        #     r -= weight_neg_direction * np.absolute(self.state[2])   # if x vel is negative
 
         self.action_prev = action
 
@@ -148,8 +152,8 @@ class footHopperEnv(Env):
     @cached_property
     def action_space(self):
 
-        high = np.array([100.0])    # foot motor max torque
-        low = np.array([-100.0])    # foot motor min torque
+        high = np.array([50.0])    # foot motor max torque
+        low = np.array([-10.0])    # foot motor min torque
         return Box(low, high)
 
 

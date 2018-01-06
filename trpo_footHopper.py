@@ -11,7 +11,7 @@ def run_task(*_):
     env = normalize(footHopperEnv())
     policy = GaussianMLPPolicy(
         env_spec=env.spec,
-        hidden_sizes=(32, 32)
+        hidden_sizes=(16, 16)
     )
     baseline = LinearFeatureBaseline(env_spec=env.spec)
 
@@ -19,7 +19,7 @@ def run_task(*_):
         env=env,
         policy=policy,
         baseline=baseline,
-        n_itr=1000,
+        n_itr=2000,
         discount=0.99,
         batch_size=4000,
         max_path_length=500,
@@ -39,4 +39,3 @@ run_experiment_lite(
     seed=1,
     log_dir='log',
 )
-
