@@ -4,11 +4,11 @@ close all
 addpath('src');
 addpath('controllers');
 
-slipObj = SLIP(0);
+slipObj = SLIP(1);
 
 nStep = 15000;
-q = zeros(7,nStep);        % to store output
-qdot = zeros(7,nStep);
+q = zeros(slipObj.nQ, nStep);        % to store output
+qdot = zeros(slipObj.nQ,nStep);
 pos_heel = zeros(1,nStep);
 pos_toe = zeros(1,nStep);
 pos_slider = zeros(1,nStep);
@@ -17,7 +17,7 @@ des_td_arr = zeros(1,nStep);
 apex_velocity = zeros(1,nStep);
 
 initState = slipObj.blank_state();
-initState.q = [0,1.2,0,0,0.45,0,0]; %0.4 for 5th position    %[x, y, phi(rot), leg_tau, leg_motor, leg_spring]
+initState.q = [0,1.2,0,0.45,0,0]; %0.4 for 4th position    %[x, y, leg_tau, leg_motor, leg_spring]
 slipObj.set_state(initState);
 
 slipObj.set_dynamic_state();
@@ -45,7 +45,7 @@ for i = 1:nStep
    
    pos_heel(:,i) = state.cpos(1);
    pos_toe(:,i) = state.cpos(2);
-   pos_slider(:,i) = state.q(5);
+   pos_slider(:,i) = state.q(4);
    tau_motor(:,i) = state.u;
    apex_velocity(:,i) = state.apex_velocity;
    q(:,i) = state.q;
@@ -72,16 +72,13 @@ figure(4)
 plot(tau_motor(1,:));
 title('leg rot motor torque');
 
-
 figure(5)
 plot(tau_motor(2,:));
 title('leg slide motor torque');
 
-
 figure(6)
 plot(des_td_arr);
 title('desired touchdown angle');
-
 
 figure(7)
 plot(qdot(1,:));
@@ -92,7 +89,7 @@ plot(q(1,:));
 title('X position');
 
 figure(9)
-plot(q(4,:));
+plot(q(3,:));
 title('leg rotational motor position');
 
 figure(10)
