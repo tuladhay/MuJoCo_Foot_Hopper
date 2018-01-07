@@ -6,8 +6,8 @@ classdef SLIP < handle
         s %slip_t pointer
         v %slip_vis_t pointer
         st %state_t pointer
-        nQ = 6;
-        nU = 3;
+        nQ = 5;
+        nU = 2;
         libName;
         deltaT = 0.002;
         

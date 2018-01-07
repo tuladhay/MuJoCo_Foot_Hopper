@@ -25,13 +25,13 @@ bool flag = false;
 #define leg_tau 2		// actuator here
 #define leg_motor 3		// actuator here
 #define spring 4		// toe
-#define foot_joint 5	// actuator here
+
 #define compression 1
 #define thrust 2
 #define flight 3
+
 #define input_leg_tau 0
 #define input_leg_motor 1
-#define input_foot_joint 2
 
 typedef struct slip_t {
         mjData *d;
@@ -64,7 +64,7 @@ slip_t* init(const char *basedir)
 		keyfile[basedirlen] = '/';
 		strcpy(keyfile + basedirlen + 1, keyfilename);// Construct XML file path
 		char *xmlfile;
-		const char xmlfilename[] = "slip_with_foot.xml";
+		const char xmlfilename[] = "slip_point_foot.xml";
 		xmlfile = malloc(basedirlen + 1 + sizeof xmlfilename);
 		strncpy(xmlfile, basedir, basedirlen);
 		xmlfile[basedirlen] = '/';
@@ -141,12 +141,7 @@ void step(slip_t* s, state_t* state)
 		state->qdd[i] = s->d->qacc[i];
 	}
 	state->t = s->d->time;
-	state->cpos[0] = s->d->site_xpos[2];		// foot heel z,
-	state->cpos[1] = s->d->site_xpos[5];		// foot toe z
-	/*
-	The size of xpos is nbody x 3. So the data corresponding to body n is:
-	xpos[3*n], xpos[3*n+1], xpos[3*n+2].	- Emo Todorov
-	*/
+	state->cpos[0] = s->d->site_xpos[2];		// toe z
 }
 
 void set_state(slip_t* s, state_t* state)
@@ -259,20 +254,16 @@ void set_dynamic_state(state_t* state)
 void controller(slip_t* s, state_t* state)
 {
 	double des_velocity = 2;			// m/s
-	double gain_Kp_L0 = 20000;
-	double gain_Kd_L0 = 1000;
+	double gain_Kp_L0 = 5000;
+	double gain_Kd_L0 = 200;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.22;
-
-	double gain_Kp_hip = 2000;
-	double gain_Kd_hip = 200;
+	double gain_footDisp = 0.15;		// 0.22
 
 	double L_flight = 0.45;
-	double L_extension = 0.52;			// 0.55 worked well for fixed flight time
+	double L_extension = 0.55;			// 0.55 worked well for fixed flight time
 	double xf_Point = 0;
-	double rest_leg_length = 1.0;		// Add up the lengths in XML
-	bool toe_bias = true;				// Set to True for pure hopping with fixed foot
+	double rest_leg_length = 1.025;		// Add up the lengths in XML
 
 	// 1 = compression
 	// 2 = thrust
@@ -290,7 +281,7 @@ void controller(slip_t* s, state_t* state)
 			// we can also try to do the same with:
 			// Transition to thrust if leg (spring) begins to extend
 			// if (state->qd[1] > 0.0)	// body z velocity
-			if (state->qd[spring] > 0.0)		// spring relaxing
+			if (state->qd[spring] < 0.0)		// spring relaxing
 			{
 				state->dynamic_state = thrust;
 				break;
@@ -300,23 +291,13 @@ void controller(slip_t* s, state_t* state)
 		case 2 :
 			// THRUST to Flight
 			// If foot contacts are above the ground, then dyn_state = FLIGHT
-			if (  (state->cpos[0] > 0.01)   &&   (state->cpos[1] > 0.01))
+			if  (state->cpos[0] > 0.01)
 			{
 				state->dynamic_state = flight;
-
 				state->stance_time = s->d->time - state->touchdown_time;
 
 				// Calculate the desired touchdown angle depending on whether you want to account for toe bias
-				// Adding bias reduces velocity tracking error. I think this is because due to the added foot, the toe touched the ground first, however,
-				// the Raibert Controller assumes that it is the mid of the foot (point feet)
-				if (toe_bias)
-				{
-					xf_Point = (0.5*(state->qd[rootx])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity)  -  0.01;		// Toe touchdown bias
-				}
-				else
-				{
-					xf_Point = (0.5*(state->qd[rootx])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity);				// NO BIAS
-				}
+				xf_Point = (0.5*(state->qd[rootx])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity);
 				
 				state->des_td_angle = asin(xf_Point/rest_leg_length);
 
@@ -325,7 +306,6 @@ void controller(slip_t* s, state_t* state)
 
 				if (state->des_td_angle < -0.25)
 					state->des_td_angle = -0.25;
-
 
 				flag = true;	// flag to update the apex velocity
 				break;
@@ -339,19 +319,18 @@ void controller(slip_t* s, state_t* state)
 			// and there is ground contact then set state to compression
 
 
-			if (state->qd[rootz] < 0 && flag)	// when it just crosses apex
+			if (state->qd[rootz] < 0 && flag)				// when it just crosses apex
 			{
 				state->apex_velocity = state->qd[rootx];	// horizontal velocity
 				flag = false;
 			}
 
 
-			//if (   (state->qd[1] < 0)   &&   ((state->cpos[0] == 0) || (state->cpos[1] == 0))   )
-			if (  ((state->cpos[0] < 0) || (state->cpos[1] < 0))   )
+			if  (state->cpos[0] < 0)
 			{
 				state->dynamic_state = compression;
 
-				// Update the flight time
+				// Update the stance time
 				state->touchdown_time = s->d->time;
 				break;
 			}
@@ -362,27 +341,23 @@ void controller(slip_t* s, state_t* state)
 	// Implement Force and Torque Controllers based on current state
 	// u[0] is teg_tau
 	// u[1] is leg_motor
-	// u[2] is foot_joint
 
 	switch(state->dynamic_state)
 	{
 		case 1 :	// Compression
 		state->u[input_leg_tau] = 0;
 		state->u[input_leg_motor] = (-gain_Kp_L0*(state->q[leg_motor] - L_flight) - gain_Kd_L0*state->qd[leg_motor]);
-		state->u[input_foot_joint] = 0;
 
 		break;
 
 		case 2 :	// Thrust
 		state->u[input_leg_tau] = 0;
 		state->u[input_leg_motor] = -gain_Kp_L0*(state->q[leg_motor]- L_extension) - gain_Kd_L0*state->qd[leg_motor];
-		state->u[input_foot_joint] = 0;
 		break;
 
 		case 3 :	// Flight
 		state->u[input_leg_tau] = -gain_Kp_swing*(state->q[leg_tau] - state->des_td_angle) - gain_Kd_swing*state->qd[leg_tau];	// Swing leg
 		state->u[input_leg_motor] = -gain_Kp_L0*(state->q[leg_motor] - L_flight) - gain_Kd_L0*state->qd[leg_motor];
-		state->u[input_foot_joint] = 0;
 		break;
 	}
 

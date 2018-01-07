@@ -4,20 +4,19 @@ close all
 addpath('src');
 addpath('controllers');
 
-slipObj = SLIP(1);
+slipObj = SLIP(0);
 
 nStep = 15000;
 q = zeros(slipObj.nQ, nStep);        % to store output
 qdot = zeros(slipObj.nQ,nStep);
-pos_heel = zeros(1,nStep);
 pos_toe = zeros(1,nStep);
 pos_slider = zeros(1,nStep);
-tau_motor = zeros(3,nStep);
+tau_motor = zeros(2,nStep);
 des_td_arr = zeros(1,nStep);
 apex_velocity = zeros(1,nStep);
 
 initState = slipObj.blank_state();
-initState.q = [0,1.2,0,0.45,0,0]; %0.4 for 4th position    %[x, y, leg_tau, leg_motor, leg_spring]
+initState.q = [0,1.2,0,0.45,0];         %0.45 for 4th position    %[x, y, leg_tau, leg_motor, leg_spring]
 slipObj.set_state(initState);
 
 slipObj.set_dynamic_state();
@@ -26,6 +25,7 @@ for i = 1:nStep
    %slipObj.set_motor_command([u(2) u(1)]); 
    slipObj.step();
    state = slipObj.get_state();
+   slipObj.controller();
    
    dyn = state.dynamic_state;
    des_td_angle = slipObj.get_des_td_angle();
@@ -39,30 +39,24 @@ for i = 1:nStep
         disp('Flight');
    end
    
-   %disp(state.cpos)
-   %disp(state.u)
-   disp(state.stance_time)
-   
-   pos_heel(:,i) = state.cpos(1);
-   pos_toe(:,i) = state.cpos(2);
+%    disp(state.stance_time)
+   pos_toe(:,i) = state.cpos(1);
    pos_slider(:,i) = state.q(4);
    tau_motor(:,i) = state.u;
    apex_velocity(:,i) = state.apex_velocity;
    q(:,i) = state.q;
    qdot(:,i) = state.qd;
-
-   slipObj.controller();
    
-   if mod(i,10) == 0
+   if mod(i,1) == 0
        slipObj.draw();
    end
    
    %u = raibertController(state.q,state.qd,state.qdd);
 end
-% figure(1)
-% plot(pos_heel);
-% figure(2)
-% plot(pos_toe);
+
+figure(2)
+plot(pos_toe);
+title('Toe position');
 
 figure(3)
 plot(pos_slider);
@@ -95,7 +89,5 @@ title('leg rotational motor position');
 figure(10)
 plot(apex_velocity(1,:));
 title('Apex Velocity');
-
-
 
 slipObj.close();
