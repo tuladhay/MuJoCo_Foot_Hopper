@@ -6,7 +6,7 @@ addpath('controllers');
 
 slipObj = SLIP(0);
 
-nStep = 15000;
+nStep = 25000;
 q = zeros(slipObj.nQ, nStep);        % to store output
 qdot = zeros(slipObj.nQ,nStep);
 pos_toe = zeros(1,nStep);

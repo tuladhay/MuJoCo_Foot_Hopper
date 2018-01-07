@@ -254,11 +254,11 @@ void set_dynamic_state(state_t* state)
 void controller(slip_t* s, state_t* state)
 {
 	double des_velocity = 2;			// m/s
-	double gain_Kp_L0 = 5000;
+	double gain_Kp_L0 = 6000;			// 5000
 	double gain_Kd_L0 = 200;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.15;		// 0.22
+	double gain_footDisp = 0.16;		// 0.22
 
 	double L_flight = 0.45;
 	double L_extension = 0.55;			// 0.55 worked well for fixed flight time
