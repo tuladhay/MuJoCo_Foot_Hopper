@@ -49,7 +49,7 @@ void get_joint_limits(pos_limits_t *lim);
 void get_motor_limits(motor_limits_t *lim);
 
 void controller(slip_t* s, state_t* state);
-void set_dynamic_state(state_t* state);
+// void set_dynamic_state(state_t* state);
 
 
 slip_vis_t *vis_init(void);

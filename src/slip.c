@@ -237,14 +237,14 @@ void get_motor_limits(motor_limits_t *lim)
 ***********************************************************************************
 */
 // TODO: Just move this to Matlab
-void set_dynamic_state(state_t* state)
-{
-	state->dynamic_state = flight;		// flight mode
-	state->des_td_angle = 0;
-	state->touchdown_time = 0;
-	state->stance_time = 0;
-	state->apex_velocity = 0;
-}
+// void set_dynamic_state(state_t* state)
+// {
+// 	state->dynamic_state = flight;		// flight mode
+// 	state->des_td_angle = 0;
+// 	state->touchdown_time = 0;
+// 	state->stance_time = 0;
+// 	state->apex_velocity = 0;
+// }
 
 /***********************************************************************************
 ************************************************************************************
@@ -258,7 +258,7 @@ void controller(slip_t* s, state_t* state)
 	double gain_Kd_L0 = 200;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.16;		// 0.22
+	double gain_footDisp = 0.14;		// 0.22
 
 	double L_flight = 0.45;
 	double L_extension = 0.55;			// 0.55 worked well for fixed flight time
@@ -301,11 +301,11 @@ void controller(slip_t* s, state_t* state)
 				
 				state->des_td_angle = asin(xf_Point/rest_leg_length);
 
-				if (state->des_td_angle > 0.25)		// approx 20 degrees
-					state->des_td_angle = 0.25;
+				if (state->des_td_angle > 0.20)		// approx 10 degrees
+					state->des_td_angle = 0.20;
 
-				if (state->des_td_angle < -0.25)
-					state->des_td_angle = -0.25;
+				if (state->des_td_angle < -0.20)
+					state->des_td_angle = -0.20;
 
 				flag = true;	// flag to update the apex velocity
 				break;
