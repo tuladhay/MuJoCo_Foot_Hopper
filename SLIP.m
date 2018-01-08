@@ -49,11 +49,6 @@ classdef SLIP < handle
         end
         
         
-        function set_dynamic_state(obj)
-            calllib(obj.libName, 'set_dynamic_state', obj.st);
-        end
-        
-        
         function controller(obj)
             calllib(obj.libName, 'controller', obj.s, obj.st);
         end
@@ -62,20 +57,6 @@ classdef SLIP < handle
         function state = get_state(obj)
             state = obj.st.Value;
         end
-        
-        function dynamic_state = get_dynamic_state(obj)
-            dynamic_state = obj.st.Value.dynamic_state;
-        end
-        
-        
-        function des_td_angle = get_des_td_angle(obj)
-            des_td_angle = obj.st.Value.des_td_angle;
-        end
-        
-        
-%         function contact_pos = get_contact_pos(obj)
-%             contact_pos = obj.st.Value.cpos;
-%         end
         
             
         function set_state(obj,state)
@@ -95,39 +76,7 @@ classdef SLIP < handle
            state.t = 0;
         end
                 
-%         function [qdd] = dynamics(obj, state)
-%             state = libpointer('state_t', state);
-%             calllib('libslip', 'forward', obj.s, state);
-%             temp = state.Value;
-%             qdd = temp.qdd;           
-%         end
-        
-%         function [lb, ub] = get_state_limits(obj)
-%             bounds.lb = zeros(1, obj.nQ);
-%             bounds.ub = zeros(1,obj.nQ);
-%             bounds = libpointer('pos_limits_t', bounds);
-%             calllib('libslip', 'get_joint_limits', bounds);
-%             lb = bounds.Value.lb;
-%             ub = bounds.Value.ub;
-%         end
-        
-%         function [lb, ub] = get_motor_limits(obj)
-%             bounds.lb = zeros(1, obj.nU);
-%             bounds.ub = zeros(1,obj.nU);
-%             bounds = libpointer('motor_limits_t', bounds);
-%             calllib('libslip', 'get_motor_limits', bounds);
-%             lb = bounds.Value.lb;
-%             ub = bounds.Value.ub;
-%         end
-        
-        
-        
-%         function state = run_forward(obj, s, h)
-%            s = libpointer('state_t', s);
-%            calllib('libslip', 'run_forward', obj.s, s, h); 
-%            state = s.Value;
-%         end
-        
+
         
                 
         function rendered = draw(obj)

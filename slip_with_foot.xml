@@ -3,7 +3,7 @@
   
   <default>
     <joint limited='true' damping='1' armature='1' />
-    <geom contype='7' conaffinity='7' condim='1' rgba='0.8 0.6 .4 1' margin="0.001" solref=".005 1" solimp=".8 .8 .01" material="geom" />
+    <geom contype='7' conaffinity='7' condim='1' rgba='0.8 0.6 .4 1' margin="0.001" solref=".005 1" solimp=".99 .98 .01" material="geom" />
     <motor ctrlrange='-.4 .4' ctrllimited='true' />  
   </default>
   
@@ -30,9 +30,8 @@
       <body name="leg" pos="0 0 -0.15">
         <joint name='leg_tau' type = 'hinge' axis='0 1 0' pos='0 0 0.15' limited='true' range='-100 100' damping='0' armature='0' stiffness='0' />
         <inertial pos='0 0 -0.1' mass='0.5' diaginertia = '0.01 0.01 0.01'/>
-	<joint name='leg_motor' type='slide' axis='0 0 -1' pos='0 0 0' limited='true' range='0.3 0.6' ref='0' damping='10' armature='10' stiffness='0'/>
+	<joint name='leg_motor' type='slide' axis='0 0 -1' pos='0 0 0' limited='true' range='0.45 0.6' ref='0' damping='1' armature='0' stiffness='0'/>
 	<!--I think the range is calculated with respect to parent body, so [-0.4 0] means 0.4 downward from the parent to the parent at 0, if z axis set to -1  -->
-<!--joint name='leg_motor' type='slide' axis='0 0 -1' pos='0 0 0' limited='true' range='-0.4 0' damping='0' armature='30' ref='-0.2' stiffness='0'/>  This if for backup-->
 
 	<geom name="leg_geom"  type="capsule" contype='2' conaffinity='2' fromto="0 0 0 0 0 -0.2" size="0.03" friction="0.9" rgba="0.1 0.7 0.2 1" />
 	
@@ -40,6 +39,7 @@
 	    	<joint name='spring' type='slide' axis='0 0 1' pos='0 0 0' limited='true' range='-0.3 0.3' damping='10' armature='0' stiffness='25000'/>
 	        <geom type='sphere' size='0.03' pos='0 0 0' friction="0.1" rgba ='0.9 0.5 0.1 1'/>
 		<inertial pos='0 0 0' mass='0.15' diaginertia = '0.01 0.01 0.01'/>
+		
 		<body name="foot" pos="0 0 -0.05">
             		<joint name="foot_joint" type="hinge" pos="0 0 0" axis="0 -1 0" range="-45 45" armature='0' stiffness='100000' damping='100000'/>
             		<geom name="foot_geom" type="capsule" fromto="-0.1 0 0 0.1 0 0" size="0.02" friction="2.0" condim='3'/>
@@ -47,6 +47,7 @@
 			<site name="foot_toe" type="sphere" pos="0.11 0 -0.02" size="0.015"/>
 			<inertial pos='0 0 0' mass='0.15' diaginertia = '0.2 0.2 0.2'/>
           	</body>
+		
         </body>
       </body>
     </body>

@@ -26,9 +26,11 @@ bool flag = false;
 #define leg_motor 3		// actuator here
 #define spring 4		// toe
 #define foot_joint 5	// actuator here
+
 #define compression 1
 #define thrust 2
 #define flight 3
+
 #define input_leg_tau 0
 #define input_leg_motor 1
 #define input_foot_joint 2
@@ -237,19 +239,6 @@ void get_motor_limits(motor_limits_t *lim)
 }
 
 
-/**********************************************************************************
-						INITIALIZE DYNAMIC STATE AND TD ANGLE
-***********************************************************************************
-*/
-// TODO: Just move this to Matlab
-void set_dynamic_state(state_t* state)
-{
-	state->dynamic_state = flight;		// flight mode
-	state->des_td_angle = 0;
-	state->touchdown_time = 0;
-	state->stance_time = 0;
-	state->apex_velocity = 0;
-}
 
 /***********************************************************************************
 ************************************************************************************
@@ -259,19 +248,19 @@ void set_dynamic_state(state_t* state)
 void controller(slip_t* s, state_t* state)
 {
 	double des_velocity = 2;			// m/s
-	double gain_Kp_L0 = 20000;
-	double gain_Kd_L0 = 1000;
+	double gain_Kp_L0 = 6000;
+	double gain_Kd_L0 = 200;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.22;
-
-	double gain_Kp_hip = 2000;
-	double gain_Kd_hip = 200;
+	double gain_footDisp = 0.14;
+	double gain_Kp_foot = 2000;
+	double gain_Kd_foot = 150;
 
 	double L_flight = 0.45;
-	double L_extension = 0.52;			// 0.55 worked well for fixed flight time
+	double L_extension = 0.55;			// 0.55 worked well for fixed flight time
 	double xf_Point = 0;
-	double rest_leg_length = 1.0;		// Add up the lengths in XML
+	double rest_leg_length = 1.025;		// Add up the lengths in XML
+	
 	bool toe_bias = true;				// Set to True for pure hopping with fixed foot
 
 	// 1 = compression
@@ -290,14 +279,14 @@ void controller(slip_t* s, state_t* state)
 			// we can also try to do the same with:
 			// Transition to thrust if leg (spring) begins to extend
 			// if (state->qd[1] > 0.0)	// body z velocity
-			if (state->qd[spring] > 0.0)		// spring relaxing
+			if (state->qd[spring] < 0.0)		// spring relaxing
 			{
 				state->dynamic_state = thrust;
 				break;
 			}
 			break;
 
-		case 2 :
+		case thrust :
 			// THRUST to Flight
 			// If foot contacts are above the ground, then dyn_state = FLIGHT
 			if (  (state->cpos[0] > 0.01)   &&   (state->cpos[1] > 0.01))
@@ -320,11 +309,11 @@ void controller(slip_t* s, state_t* state)
 				
 				state->des_td_angle = asin(xf_Point/rest_leg_length);
 
-				if (state->des_td_angle > 0.25)		// approx 20 degrees
-					state->des_td_angle = 0.25;
+				if (state->des_td_angle > 0.20)		// approx 10 degrees
+					state->des_td_angle = 0.20;
 
-				if (state->des_td_angle < -0.25)
-					state->des_td_angle = -0.25;
+				if (state->des_td_angle < -0.20)
+					state->des_td_angle = -0.20;
 
 
 				flag = true;	// flag to update the apex velocity
@@ -333,7 +322,7 @@ void controller(slip_t* s, state_t* state)
 			break;
 
 
-		case 3 :
+		case flight :
 			// FLIGHT to Compression
 			// check if body acceleration is some negative threshold,
 			// and there is ground contact then set state to compression
@@ -382,7 +371,7 @@ void controller(slip_t* s, state_t* state)
 		case 3 :	// Flight
 		state->u[input_leg_tau] = -gain_Kp_swing*(state->q[leg_tau] - state->des_td_angle) - gain_Kd_swing*state->qd[leg_tau];	// Swing leg
 		state->u[input_leg_motor] = -gain_Kp_L0*(state->q[leg_motor] - L_flight) - gain_Kd_L0*state->qd[leg_motor];
-		state->u[input_foot_joint] = 0;
+		state->u[input_foot_joint] = -gain_Kp_foot*(state->q[foot_joint] -  state->q[leg_tau]) - gain_Kd_foot*state->qd[foot_joint];
 		break;
 	}
 
