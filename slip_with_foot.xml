@@ -41,7 +41,7 @@
 		<inertial pos='0 0 0' mass='0.15' diaginertia = '0.01 0.01 0.01'/>
 		
 		<body name="foot" pos="0 0 -0.05">
-            		<joint name="foot_joint" type="hinge" pos="0 0 0" axis="0 -1 0" range="-45 45" armature='0' stiffness='100000' damping='100000'/>
+            		<joint name="foot_joint" type="hinge" pos="0 0 0" axis="0 -1 0" range="-45 45" armature='0' stiffness='0' damping='1'/>
             		<geom name="foot_geom" type="capsule" fromto="-0.1 0 0 0.1 0 0" size="0.02" friction="2.0" condim='3'/>
 			<site name="foot_heel" type="sphere" pos="-0.11 0 -0.02" size="0.015"/>
 			<site name="foot_toe" type="sphere" pos="0.11 0 -0.02" size="0.015"/>

@@ -35,8 +35,6 @@ classdef SLIP < handle
             if(enableVisuals == 1)
                 obj.v = calllib(obj.libName, 'vis_init');
             end
-            
-           
         end   
         
         function set_motor_command(obj,u)
@@ -64,6 +62,11 @@ classdef SLIP < handle
             obj.st.Value.qd = state.qd;
             obj.st.Value.qdd = state.qdd;
             obj.st.Value.t = state.t;
+            obj.st.Value.dynamic_state = state.dynamic_state;
+            obj.st.Value.des_td_angle = state.des_td_angle;
+            obj.st.Value.touchdown_time = state.touchdown_time;
+            obj.st.Value.stance_time = state.stance_time;
+            obj.st.Value.apex_velocity = state.apex_velocity;
             
             calllib(obj.libName, 'set_state', obj.s, obj.st);
         end
@@ -74,9 +77,12 @@ classdef SLIP < handle
            state.qdd = state.q;
            state.u = zeros(1, obj.nU);
            state.t = 0;
+           state.dynamic_state = 3;     % start in flight mode
+           state.des_td_angle = 0;
+           state.touchdown_time = 0;
+           state.stance_time = 0;
+           state.apex_velocity = 0;
         end
-                
-
         
                 
         function rendered = draw(obj)

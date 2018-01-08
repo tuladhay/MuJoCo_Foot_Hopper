@@ -16,19 +16,19 @@ tau_motor = zeros(3,nStep);
 des_td_arr = zeros(1,nStep);
 apex_velocity = zeros(1,nStep);
 
-initState = slipObj.blank_state();
-initState.q = [0,1.2,0,0.45,0,0]; %0.4 for 4th position    %[x, y, leg_tau, leg_motor, leg_spring]
+initState = slipObj.blank_state();   % all states set to 0, dynamic_state = 3
+initState.q = [0,1.2,0,0.45,0,0];    %[x, y, leg_tau, leg_motor, leg_spring, foot_joint]
+% TODO: Implement switch case for starting with some positive velocity
 slipObj.set_state(initState);
-
-slipObj.set_dynamic_state();
 
 for i = 1:nStep
    %slipObj.set_motor_command([u(2) u(1)]); 
    slipObj.step();
    state = slipObj.get_state();
-   
+   slipObj.controller();
+
    dyn = state.dynamic_state;
-   des_td_angle = slipObj.get_des_td_angle();
+   des_td_angle = state.des_td_angle;
    des_td_arr(:,i) = des_td_angle;
    
    if dyn ==1
@@ -50,14 +50,11 @@ for i = 1:nStep
    apex_velocity(:,i) = state.apex_velocity;
    q(:,i) = state.q;
    qdot(:,i) = state.qd;
-
-   slipObj.controller();
    
    if mod(i,10) == 0
        slipObj.draw();
    end
    
-   %u = raibertController(state.q,state.qd,state.qdd);
 end
 % figure(1)
 % plot(pos_heel);
@@ -95,7 +92,5 @@ title('leg rotational motor position');
 figure(10)
 plot(apex_velocity(1,:));
 title('Apex Velocity');
-
-
 
 slipObj.close();
