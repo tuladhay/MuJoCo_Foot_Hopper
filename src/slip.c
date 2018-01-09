@@ -248,6 +248,10 @@ void get_motor_limits(motor_limits_t *lim)
 */
 void controller(slip_t* s, state_t* state)
 {
+	/*****************************************************************************************************
+					CHECK THESE CONFIGURATIONS, ESPECIALLY TOE BIAS, ANKLE ACTUATION, OPTION (for scaling)
+	******************************************************************************************************
+	*/
 	double des_velocity = 2;			// m/s
 	double gain_Kp_L0 = 6000;
 	double gain_Kd_L0 = 200;
@@ -262,10 +266,14 @@ void controller(slip_t* s, state_t* state)
 	double xf_Point = 0;
 	double rest_leg_length = 1.025;		// Add up the lengths in XML
 	
-	bool toe_bias = true;				// Set to True for pure hopping with fixed foot
-	bool ankle_actuation = true;
 	static double rec_time = 0;
-
+	bool toe_bias = true;				// Set to True for lift off from toe
+	bool ankle_actuation = true;
+	double ankle_tau_d = 0;
+	int option = 2;					// 1: Torque scaling*, 2: Angle scaling* (*wrt previous stance time)
+/********************************************************************************************************
+*********************************************************************************************************
+*/
 	// 1 = compression
 	// 2 = thrust
 	// 3 = flight
@@ -296,7 +304,6 @@ void controller(slip_t* s, state_t* state)
 			if (  (state->cpos[0] > 0.01)   &&   (state->cpos[1] > 0.01))
 			{
 				state->dynamic_state = flight;
-
 				state->stance_time = s->d->time - state->touchdown_time;
 
 				// Calculate the desired touchdown angle depending on whether you want to account for toe bias
@@ -310,7 +317,6 @@ void controller(slip_t* s, state_t* state)
 				{
 					xf_Point = (0.5*(state->qd[rootx])*state->stance_time) + gain_footDisp*(state->apex_velocity - des_velocity);				// NO BIAS
 				}
-				
 				state->des_td_angle = asin(xf_Point/rest_leg_length);
 
 				if (state->des_td_angle > 0.20)		// approx 10 degrees
@@ -324,21 +330,16 @@ void controller(slip_t* s, state_t* state)
 			}
 			break;
 
-
 		case flight :
 			// FLIGHT to Compression
 			// check if body acceleration is some negative threshold,
 			// and there is ground contact then set state to compression
-
 
 			if (state->qd[rootz] < 0 && flag)	// when it just crosses apex
 			{
 				state->apex_velocity = state->qd[rootx];	// horizontal velocity
 				flag = false;
 			}
-
-
-			//if (   (state->qd[1] < 0)   &&   ((state->cpos[0] == 0) || (state->cpos[1] == 0))   )
 			if (  ((state->cpos[0] < 0) || (state->cpos[1] < 0))   )
 			{
 				state->dynamic_state = compression;
@@ -357,22 +358,41 @@ void controller(slip_t* s, state_t* state)
 	// u[2] is foot_joint
 
 	switch(state->dynamic_state)
-	{
+	{	/**********************************************************
+		NOTE: CHECK THE TOE BIAS, ANGLE ACTUATION AND OTHER PARAMS
+		**********************************************************/
 		case 1 :	// Compression
 		state->u[input_leg_tau] = 0;
 		state->u[input_leg_motor] = (-gain_Kp_L0*(state->q[leg_motor] - L_flight) - gain_Kd_L0*state->qd[leg_motor]);
 		state->u[input_foot_joint] = 0;
-
 		break;
 
 		case 2 :	// Thrust
 		state->u[input_leg_tau] = 0;
 		state->u[input_leg_motor] = -gain_Kp_L0*(state->q[leg_motor]- L_extension) - gain_Kd_L0*state->qd[leg_motor];
 		
-		if(!ankle_actuation)
+		if (state->q[leg_motor] > 0.45)		// At what point during Thrust phase to apply ankle torque?
+		{
+			if(!ankle_actuation)
 			{state->u[input_foot_joint] = 0;}
-		else
-			{state->u[input_foot_joint]	= ((s->d->time - rec_time)/(state->stance_time/2)) * 50; }
+			else
+			{	
+				switch (option)
+				{
+					case 1:		// scaling desired ankle torque by later half of stance time
+					{			// need braces here because I am defining a variable inside case
+					double target_torque = 50;		// Not guaranteed to reach this. Since stance time is estimate using old stance time
+					state->u[input_foot_joint]	= ((s->d->time - rec_time)/(state->stance_time/2)) * target_torque;
+					}
+					break; 		// for time scaling torque
+					
+					case 2:		// scaling desired ankle angle by stance time, and using PD over the desired ankle angle
+					ankle_tau_d = ((s->d->time - rec_time)/(state->stance_time/2)) * 0.2;	// 0.2 is radians for max angle, it is approximate
+					state->u[input_foot_joint] = -2000*(state->q[foot_joint] - ankle_tau_d) - 200*state->qd[foot_joint];
+					break;
+				}
+			}
+		}
 		break;
 
 		case 3 :	// Flight

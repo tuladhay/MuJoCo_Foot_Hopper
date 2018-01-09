@@ -6,7 +6,7 @@ addpath('controllers');
 
 slipObj = SLIP(1);
 
-nStep = 5000;
+nStep = 3500;
 q = zeros(slipObj.nQ, nStep);        % to store output
 qdot = zeros(slipObj.nQ,nStep);
 pos_heel = zeros(1,nStep);
@@ -42,7 +42,7 @@ for i = 1:nStep
    
    %disp(state.cpos)
    %disp(state.u)
-   disp(state.stance_time)
+   %disp(state.stance_time)
    
    pos_heel(:,i) = state.cpos(1);
    pos_toe(:,i) = state.cpos(2);
@@ -52,7 +52,7 @@ for i = 1:nStep
    q(:,i) = state.q;
    qdot(:,i) = state.qd;
    
-   if mod(i,5) == 0
+   if mod(i,1) == 0
        slipObj.draw();
    end
    
@@ -107,6 +107,12 @@ saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
 figure(10)
 plot(apex_velocity(1,:));
 filename = 'Apex velocity';
+title(filename);
+saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+
+figure(11)
+plot(q(2,:));
+filename = 'Z position';
 title(filename);
 saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
 
