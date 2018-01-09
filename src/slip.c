@@ -35,6 +35,7 @@ bool flag = false;
 #define input_leg_motor 1
 #define input_foot_joint 2
 
+
 typedef struct slip_t {
         mjData *d;
 }slip_t;
@@ -262,6 +263,8 @@ void controller(slip_t* s, state_t* state)
 	double rest_leg_length = 1.025;		// Add up the lengths in XML
 	
 	bool toe_bias = true;				// Set to True for pure hopping with fixed foot
+	bool ankle_actuation = true;
+	static double rec_time = 0;
 
 	// 1 = compression
 	// 2 = thrust
@@ -282,6 +285,7 @@ void controller(slip_t* s, state_t* state)
 			if (state->qd[spring] < 0.0)		// spring relaxing
 			{
 				state->dynamic_state = thrust;
+				rec_time = s->d->time;			// for ankle torque time scaling
 				break;
 			}
 			break;
@@ -311,12 +315,11 @@ void controller(slip_t* s, state_t* state)
 
 				if (state->des_td_angle > 0.20)		// approx 10 degrees
 					state->des_td_angle = 0.20;
-
 				if (state->des_td_angle < -0.20)
 					state->des_td_angle = -0.20;
 
-
 				flag = true;	// flag to update the apex velocity
+				rec_time = 0;
 				break;
 			}
 			break;
@@ -365,7 +368,11 @@ void controller(slip_t* s, state_t* state)
 		case 2 :	// Thrust
 		state->u[input_leg_tau] = 0;
 		state->u[input_leg_motor] = -gain_Kp_L0*(state->q[leg_motor]- L_extension) - gain_Kd_L0*state->qd[leg_motor];
-		state->u[input_foot_joint] = 0;
+		
+		if(!ankle_actuation)
+			{state->u[input_foot_joint] = 0;}
+		else
+			{state->u[input_foot_joint]	= ((s->d->time - rec_time)/(state->stance_time/2)) * 50; }
 		break;
 
 		case 3 :	// Flight
