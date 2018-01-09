@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 
-#define nQ 7	// count the number of joints in the xml file
+#define nQ 6	// count the number of joints in the xml file
 #define nU 3	// count the number of inputs in the xml file
 #define nC 2	// count the number of sites in the xml file
 

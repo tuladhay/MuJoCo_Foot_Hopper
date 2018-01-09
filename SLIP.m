@@ -6,7 +6,7 @@ classdef SLIP < handle
         s %slip_t pointer
         v %slip_vis_t pointer
         st %state_t pointer
-        nQ = 7;
+        nQ = 6;
         nU = 3;
         libName;
         deltaT = 0.002;
@@ -45,8 +45,8 @@ classdef SLIP < handle
            obj.st.Value.u(2) = u(2); 
         end
         
-        function step(obj)
-            calllib(obj.libName, 'step', obj.s, 1000.0);
+        function step(obj, value)
+            calllib(obj.libName, 'step', obj.s, value);
         end
         
         

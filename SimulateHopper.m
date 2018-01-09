@@ -4,31 +4,28 @@ close all
 addpath('src');
 addpath('controllers');
 
-slipObj = SLIP(0);
+slipObj = SLIP(1);
 
-nStep = 10000;
-q = zeros(7,nStep);        % to store output
-qdot = zeros(7,nStep);
+nStep = 3500;
+q = zeros(slipObj.nQ,nStep);        % to store output
+qdot = zeros(slipObj.nQ,nStep);
 pos_heel = zeros(1,nStep);
 pos_toe = zeros(1,nStep);
 pos_slider = zeros(1,nStep);
-tau_motor = zeros(3,nStep);
+tau_motor = zeros(slipObj.nU,nStep);
 des_td_arr = zeros(1,nStep);
 apex_velocity = zeros(1,nStep);
 
 % initState = slipObj.blank_state();
 % initState.q = [0,1.2,0,0,0.45,0,0]; %0.4 for 5th position    %[x, y, phi(rot), leg_tau, leg_motor, leg_spring]
 % slipObj.set_state(initState);
-
 % slipObj.set_dynamic_state();
 
 for i = 1:nStep
-   slipObj.step();
-%    slipObj.action = cos(2*pi*0.2*i);
-%    slipObj.stepRL();
-% foot was set loose for testing
+   slipObj.step(1000);      % pass value for ankle torque
+
 % see the slipObj.slip function
-   state = slipObj.get_state();
+   state = slipObj.get_state();     % from mjdata
    
    %dyn = state.dynamic_state;
    %des_td_angle = slipObj.get_des_td_angle();
@@ -46,21 +43,18 @@ for i = 1:nStep
    %disp(state.u)
    %disp(state.stance_time)
    
-   pos_heel(:,i) = state.cpos(1);
-   pos_toe(:,i) = state.cpos(2);
-   pos_slider(:,i) = state.q(5);
-   %tau_motor(:,i) = state.u;
-   %apex_velocity(:,i) = state.apex_velocity;
-   q(:,i) = state.q;
-   qdot(:,i) = state.qd;
-
-   % slipObj.controller();
+%    pos_heel(:,i) = state.cpos(1);
+%    pos_toe(:,i) = state.cpos(2);
+%    pos_slider(:,i) = state.q(5);
+%    %tau_motor(:,i) = state.u;
+%    apex_velocity(:,i) = state.apex_velocity;
+%    q(:,i) = state.q;
+%    qdot(:,i) = state.qd;
    
    if mod(i,5) == 0
        slipObj.draw();
    end
    
-   %u = raibertController(state.q,state.qd,state.qdd);
 end
 % figure(1)
 % plot(pos_heel);
@@ -98,7 +92,5 @@ title('leg rotational motor position');
 figure(10)
 plot(apex_velocity(1,:));
 title('Apex Velocity');
-
-
 
 slipObj.close();

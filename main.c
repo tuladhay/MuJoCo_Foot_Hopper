@@ -28,7 +28,7 @@ int main()
 		state->u[i] = 0.0;
 
 	state->q[1] = 0.7; //Height off the ground
-	state->q[4] = 0.4; //Resting Leg Length
+	state->q[3] = 0.45; //Resting Leg Length
 
 	//int ret = get_stationary_init(s, state);
 	if ( false) //ret

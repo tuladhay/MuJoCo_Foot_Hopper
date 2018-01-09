@@ -18,8 +18,23 @@ static bool m_bMJActivated = false;
 static bool glfw_initialized = false;
 
 static bool initialize = true;
-
 bool flag = false;
+
+// See the XML file for the DOF/joint details
+#define rootx 0
+#define rootz 1
+#define leg_tau 2		// actuator here
+#define leg_motor 3		// actuator here
+#define spring 4		// toe
+#define foot_joint 5	// actuator here
+
+#define compression 1
+#define thrust 2
+#define flight 3
+
+#define input_leg_tau 0
+#define input_leg_motor 1
+#define input_foot_joint 2
 
 
 typedef struct slip_t {
@@ -75,7 +90,6 @@ slip_t* init(const char *basedir)
     }
 	m_bMJActivated = true;
 
-
     slip_t *s = calloc(1, sizeof(slip_t));
     s->d = mj_makeData(m); // d is a pointer to mjData
 	// Once both mjModel and mjData are allocated and initialized, we can call the various simulation functions. 
@@ -118,27 +132,14 @@ void forward(slip_t* s, state_t* state)
 
 void step(slip_t* s, double action)
 {	
-	// Defining static variables to get rid of the state_t structure
-	// For ones that are not in slip_t (mjdata)
-	//static double book_keeping[5];
-	// static int dynamic_state;
-	// static double des_td_angle;
-	// static double touchdown_time;
-	// static double stance_time;
-	// static double apex_velocity;
-
 	if (initialize)						// initialize set to False inside controller
 	{
 		set_initial_state(s);
 	}
-
-
 	s->d->ctrl[2] = action;				// Set by RL
 	
 	mj_step(m, s->d);					// pass the mjModel and mjData
-	//printf("Calling step\n");
 	controller(s);						// Sets s->d->ctrl[0] = u[0]; And for u[1]
-
 }
 
 void set_state(slip_t* s, state_t* state)
@@ -182,7 +183,6 @@ void run_forward(slip_t* s, state_t* state, double DT)
 		state->qd[i] = s->d->qvel[i];
 		state->qdd[i] = s->d->qacc[i];
 	}
-
 }
 
 void step_ctrl(slip_t* s)
@@ -236,48 +236,21 @@ void get_motor_limits(motor_limits_t *lim)
 // The return type should be an array of doubles since that is what rllab will take.
 void get_observation(slip_t* s, double* state_vec)		// void because we want to use pointers?
 {	// state_vec is a double array passed from env.
-	state_vec[0] = s->d->qpos[0];			// x pos
-	state_vec[1] = s->d->qpos[1];			// z pos
-	state_vec[2] = s->d->qvel[0];			// x vel
-	state_vec[3] = s->d->qvel[1];			// z vel
-	state_vec[4] = s->d->qpos[3];			// leg tau pos
-	state_vec[5] = s->d->qpos[6];			// foot joint motor pos
+	state_vec[0] = s->d->qpos[rootx];			// x pos
+	state_vec[1] = s->d->qpos[rootz];			// z pos
+	state_vec[2] = s->d->qvel[rootx];			// x vel
+	state_vec[3] = s->d->qvel[rootz];			// z vel
+	state_vec[4] = s->d->qpos[leg_tau];			// leg tau pos
+	state_vec[5] = s->d->qpos[foot_joint];			// foot joint motor pos
 	state_vec[6] = s->d->site_xpos[2];		// foot heel Z pos
 	state_vec[7] = s->d->site_xpos[5];		// foot toe Z pos
 }
 
 
 /**********************************************************************************
-						INITIALIZE DYNAMIC STATE AND TD ANGLE
+									INITIALIZE
 ***********************************************************************************
 */
-
-// void set_dynamic_state(state_t* state)	// probably avoid this function
-// {
-// 	for (int i = 0; i < nQ; i++)
-// 	{
-// 		state->q[i] = 0;
-// 		state->qd[i] = 0;
-// 		state->qdd[i] = 0;
-// 	}
-
-// 	for (int i=0; i<nU; i++)
-// 		state->u[i] = 0;
-	
-// 	state->t = 0;
-// 	state->dynamic_state = 3;
-// 	state->des_td_angle = 0;
-// 	state->touchdown_time = 0;
-// 	state->stance_time = 0;			// flight_time = time - td_time_previous
-// 	state->apex_velocity = 0;
-
-// 	// SET THE OTHER SPECIFIC INITIAL CONDITIONS FOR Z pos (height) and leg motor pos
-// 	state->q[1] = 1.2;
-// 	state->q[4] = 0.45;
-// }	
-// TODO: modify it so that the states are passed in as arguments?
-
-
 void set_initial_state(slip_t* s)
 {
 	for (int i = 0; i < nQ; i++)
@@ -288,8 +261,8 @@ void set_initial_state(slip_t* s)
 	}
 	s->d->time = 0;
 
-	s->d->qpos[1] = 1.2;
-	s->d->qpos[4] = 0.45;
+	s->d->qpos[rootz] = 1.2;
+	s->d->qpos[leg_motor] = 0.45;
 	// dont know what cpos are; to get those, you can just run one step
 }
 
@@ -302,19 +275,19 @@ void set_initial_state(slip_t* s)
 void controller(slip_t* s)
 {
 	double des_velocity = 2;			// m/s
-	double gain_Kp_L0 = 20000;
-	double gain_Kd_L0 = 1000;
+	double gain_Kp_L0 = 6000;
+	double gain_Kd_L0 = 200;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.22;
+	double gain_footDisp = 0.14;
 
-	double gain_Kp_hip = 2000;
-	double gain_Kd_hip = 200;
+	//double gain_Kp_hip = 2000;
+	//double gain_Kd_hip = 200;
 
 	double L_flight = 0.45;
-	double L_extension = 0.52;
+	double L_extension = 0.55;
 	double xf_Point = 0;
-	double rest_leg_length = 1.0;
+	double rest_leg_length = 1.025;
 	bool toe_bias = true;
 
 	// These static variables should retain their values between function calls
@@ -343,7 +316,6 @@ void controller(slip_t* s)
 	}
 
 	
-
 	for (int i = 0; i < nQ; i++)
 	{
 		state.q[i] = s->d->qpos[i];
@@ -353,12 +325,6 @@ void controller(slip_t* s)
 	state.t = s->d->time;
 	state.cpos[0] = s->d->site_xpos[2];		// foot heel z,
 	state.cpos[1] = s->d->site_xpos[5];		// foot toe z
-	
-	// state->dynamic_state = dynamic_state;
-	// state->des_td_angle = des_td_angle;
-	// state->touchdown_time = touchdown_time;
-	// state->stance_time = stance_time;
-	// state->apex_velocity = apex_velocity;
 
 	// 1 = compression
 	// 2 = thrust
@@ -377,7 +343,7 @@ void controller(slip_t* s)
 			// Transition to thrust if leg (spring) begins to extend
 			// if (state->qd[1] > 0.0)	// body z velocity
 			// Dont know which one is preferrable. I think spring can have oscillations and body z could be actually better.
-			if (state.qd[5] > 0.0)		// spring z velocity
+			if (state.qd[spring] < 0.0)		// spring z velocity
 			{
 				dynamic_state = 2;
 				break;
@@ -390,7 +356,6 @@ void controller(slip_t* s)
 			if (  (state.cpos[0] > 0.01)   &&   (state.cpos[1] > 0.01))
 			{
 				dynamic_state = 3;
-
 				stance_time = s->d->time - touchdown_time;
 
 				// Calculate the desired touchdown angle depending on whether you want to account for toe bias
@@ -398,11 +363,11 @@ void controller(slip_t* s)
 				// the Raibert Controller assumes that it is the mid of the foot (point feet)
 				if (toe_bias)
 				{
-					xf_Point = (0.5*(state.qd[0])*stance_time) + gain_footDisp*(apex_velocity - des_velocity)  -  0.01;		// Toe touchdown bias
+					xf_Point = (0.5*(state.qd[rootx])*stance_time) + gain_footDisp*(apex_velocity - des_velocity)  -  0.01;		// Toe touchdown bias
 				}
 				else
 				{
-					xf_Point = (0.5*(state.qd[0])*stance_time) + gain_footDisp*(apex_velocity - des_velocity);				// NO BIAS
+					xf_Point = (0.5*(state.qd[rootx])*stance_time) + gain_footDisp*(apex_velocity - des_velocity);				// NO BIAS
 				}
 				
 				des_td_angle = asin(xf_Point/rest_leg_length);
@@ -413,10 +378,7 @@ void controller(slip_t* s)
 				if (des_td_angle < -0.25)
 					des_td_angle = -0.25;
 
-
 				dynamic_state = 3;
-
-				// Update stance time, and use this for next calculation of touchdown angle
 
 				flag = true;	// flag to update the apex velocity
 				break;
@@ -430,9 +392,9 @@ void controller(slip_t* s)
 			// and there is ground contact then set state to compression
 
 
-			if (state.qd[1] < 0 && flag)			// when it just crosses apex
+			if (state.qd[rootz] < 0 && flag)			// when it just crosses apex
 			{
-				apex_velocity = state.qd[0];
+				apex_velocity = state.qd[rootx];
 				flag = false;
 			}
 
@@ -464,23 +426,23 @@ void controller(slip_t* s)
 		case 1 :	// Compression
 		// fixate the leg motor
 		//state->u[0] =  -gain_Kp_hip*(state->q[3] - state->des_td_angle) - gain_Kp_hip*state->qd[3];
-		u[0] = 0;
-		u[1] = (-gain_Kp_L0*(state.q[4] - L_flight) - gain_Kd_L0*state.qd[4]);
+		u[input_leg_tau] = 0;
+		u[input_leg_motor] = (-gain_Kp_L0*(state.q[leg_motor] - L_flight) - gain_Kd_L0*state.qd[leg_motor]);
 		//u[2] = 0;
 
 		break;
 
 		case 2 :	// Thrust
 		//state->u[0] = -gain_Kp_hip*(state->q[3] - state->des_td_angle) - gain_Kp_hip*state->qd[3];
-		u[0] = 0;
-		u[1] = -gain_Kp_L0*(state.q[4]- L_extension) - gain_Kd_L0*state.qd[4];
+		u[input_leg_tau] = 0;
+		u[input_leg_motor] = -gain_Kp_L0*(state.q[leg_motor]- L_extension) - gain_Kd_L0*state.qd[leg_motor];
 		//u[2] = 0;
 		break;
 
 		case 3 :	// Flight
 		//state->des_td_angle = -0.3;
-		u[0] = -gain_Kp_swing*(state.q[3] - des_td_angle) - gain_Kd_swing*state.qd[3];	// Swing leg
-		u[1] = -gain_Kp_L0*(state.q[4] - L_flight) - gain_Kd_L0*state.qd[4];
+		u[input_leg_tau] = -gain_Kp_swing*(state.q[leg_tau] - des_td_angle) - gain_Kd_swing*state.qd[leg_tau];	// Swing leg
+		u[input_leg_motor] = -gain_Kp_L0*(state.q[leg_motor] - L_flight) - gain_Kd_L0*state.qd[leg_motor];
 		//u[2] = 0;
 		//state->u[0] = -50;
 		break;
