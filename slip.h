@@ -49,8 +49,7 @@ void get_joint_limits(pos_limits_t *lim);
 void get_motor_limits(motor_limits_t *lim);
 
 void controller(slip_t* s, state_t* state);
-void set_dynamic_state(state_t* state);
-
+double ankle_tau_COP(state_t* state, double CoP_pos);
 
 slip_vis_t *vis_init(void);
 bool vis_draw(slip_vis_t *v, slip_t *s, bool bWaitUser);

@@ -24,7 +24,7 @@ bool flag = false;
 #define rootz 1
 #define leg_tau 2		// actuator here
 #define leg_motor 3		// actuator here
-#define spring 4		// toe
+#define spring 4		// toe spring
 #define foot_joint 5	// actuator here
 
 #define compression 1
@@ -34,6 +34,8 @@ bool flag = false;
 #define input_leg_tau 0
 #define input_leg_motor 1
 #define input_foot_joint 2
+
+#define spring_stiffness 25000
 
 
 typedef struct slip_t {
@@ -257,7 +259,7 @@ void controller(slip_t* s, state_t* state)
 	double gain_Kd_L0 = 200;
 	double gain_Kp_swing = 2500;
 	double gain_Kd_swing = 150;
-	double gain_footDisp = 0.14;
+	double gain_footDisp = 0.05;		// 0.14 worked best for point foot, and foot w/o ankle torque
 	double gain_Kp_foot = 2000;
 	double gain_Kd_foot = 150;
 
@@ -267,10 +269,15 @@ void controller(slip_t* s, state_t* state)
 	double rest_leg_length = 1.025;		// Add up the lengths in XML
 	
 	static double rec_time = 0;
-	bool toe_bias = true;				// Set to True for lift off from toe
-	bool ankle_actuation = true;
+	bool toe_bias = false;				// Set to True for lift off from toe
 	double ankle_tau_d = 0;
-	int option = 2;					// 1: Torque scaling*, 2: Angle scaling* (*wrt previous stance time)
+	double CoP_pos = 0.1;				// Center of Pressure location where you want it to be
+	int ankle_actuation_option = 3;		// see options below
+	// 0: No ankle torque
+	// 1: Torque scaling*
+	// 2: Angle scaling* (*wrt previous stance time)
+	// 3: CoP shift
+
 /********************************************************************************************************
 *********************************************************************************************************
 */
@@ -368,32 +375,41 @@ void controller(slip_t* s, state_t* state)
 		break;
 
 		case 2 :	// Thrust
-		state->u[input_leg_tau] = 0;
+		state->u[input_leg_tau] = 0;//-75;		// Trying some contant torque stance leg retraction
 		state->u[input_leg_motor] = -gain_Kp_L0*(state->q[leg_motor]- L_extension) - gain_Kd_L0*state->qd[leg_motor];
 		
-		if (state->q[leg_motor] > 0.45)		// At what point during Thrust phase to apply ankle torque?
+		if (state->q[leg_motor] > 0.45)		// At what point during Thrust phase to apply ankle torque? This check might not be necessary
 		{
-			if(!ankle_actuation)
-			{state->u[input_foot_joint] = 0;}
-			else
-			{	
-				switch (option)
-				{
+				switch (ankle_actuation_option)
+				{	
+					case 0:
+					{
+						state->u[input_foot_joint] = 0;
+					}
+					break;
+
 					case 1:		// scaling desired ankle torque by later half of stance time
 					{			// need braces here because I am defining a variable inside case
-					double target_torque = 50;		// Not guaranteed to reach this. Since stance time is estimate using old stance time
-					state->u[input_foot_joint]	= ((s->d->time - rec_time)/(state->stance_time/2)) * target_torque;
+						double target_torque = 50;		// Not guaranteed to reach this. Since stance time is estimate using old stance time
+						state->u[input_foot_joint]	= ((s->d->time - rec_time)/(state->stance_time/2)) * target_torque;
 					}
 					break; 		// for time scaling torque
 					
 					case 2:		// scaling desired ankle angle by stance time, and using PD over the desired ankle angle
-					ankle_tau_d = ((s->d->time - rec_time)/(state->stance_time/2)) * 0.2;	// 0.2 is radians for max angle, it is approximate
-					state->u[input_foot_joint] = -2000*(state->q[foot_joint] - ankle_tau_d) - 200*state->qd[foot_joint];
+					{
+						ankle_tau_d = ((s->d->time - rec_time)/(state->stance_time/2)) * 0.2;	// 0.2 is radians for max angle, it is approximate
+						state->u[input_foot_joint] = -2000*(state->q[foot_joint] - ankle_tau_d) - 200*state->qd[foot_joint];
+					}
 					break;
-				}
-			}
-		}
-		break;
+
+					case 3:		// Apply torque to change the Center of Pressure to where you want it
+					{	
+						state->u[input_foot_joint] = ankle_tau_COP(state, CoP_pos);
+					}
+					break;// Break ankle actuation Switch
+				}//switch
+		}//if
+		break;//Break thrust switch
 
 		case 3 :	// Flight
 		state->u[input_leg_tau] = -gain_Kp_swing*(state->q[leg_tau] - state->des_td_angle) - gain_Kd_swing*state->qd[leg_tau];	// Swing leg
@@ -406,6 +422,18 @@ void controller(slip_t* s, state_t* state)
 	for (int i = 0; i < nU; i++)
 		{s->d->ctrl[i] = state->u[i];}
 
+}
+
+/************************************************************************************
+*************************************************************************************
+							ANKLE TORQUE CONTROLLERS
+*************************************************************************************
+*/
+double ankle_tau_COP(state_t* state, double CoP_pos)
+{
+	double force = spring_stiffness * state->q[spring];			// F = spring_stiffness * spring_displacement
+	double torque = force * cos(state->q[leg_tau]) * CoP_pos;
+	return torque;
 }
 
 
