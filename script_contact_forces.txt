@@ -1,0 +1,48 @@
+
+            //*************************************************************************************
+            //                          To get the contact forces
+            //  Call this inside step or in controller where you need contact X, Z forces
+            //  Note: conForce means constrained forces, and comJac means constrained Jacobian
+            //        These are different from the regular joint forces and jacobian
+            //*************************************************************************************
+            mjtNum conForce[d->ncon*6];
+            mjtNum conJac[m->nv*(d->ncon*6)];
+     
+            int idx = 0;
+            //printf("nefc : %d\n", d->nefc);         // YT: This prints
+            for (int i = 0; i<d->nefc; i++)
+            {   
+                //printf(" %d\n", d->efc_type[i]);
+                if (d->efc_type[i] != mjCNSTR_CONTACT_PYRAMIDAL)     // Skips everytime
+                    continue;
+                conForce[idx] = d->efc_force[i];
+                
+                //printf(" I AM HERE TOO\n");
+            
+                for (int j = 0; j < m->nv; j++)
+                {
+                    conJac[idx*m->nv + j] = d->efc_J[i*m->nv + j];
+                }
+                idx++;
+            }// Till here we have grabbed the constrained Forces and the constrained Jacobian in arrays
+
+            for (int i = 0; i < d->ncon; i++)
+            {
+                mjtNum tempJac[m->nv*6];        // for a single contact
+                mjtNum tempConForce[6];         // for a single contact
+
+                for (int j = 0; j < 6; j++)
+                {
+                    tempConForce[j] = conForce[i*6 + j];
+                    for (int k = 0; k < m->nv; k++)
+                    {
+                        tempJac[j*m->nv + k] = conJac[i*(6*m->nv) + j*m->nv + k];
+                    }
+                }
+                mjtNum resForce[m->nv];
+                mju_mulMatTVec(resForce, tempJac, tempConForce, m->nv, 6);
+                printf("Contact Force: %d X,Z:(%f,%f)\t \t", i, resForce[0], resForce[1]);
+            }
+            printf("\n");
+            // ****************************************************************************************
+            // ****************************************************************************************
