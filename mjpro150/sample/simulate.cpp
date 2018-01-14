@@ -1001,22 +1001,18 @@ void simulation(void)
             mj_step(m, d);
             
             //*************************************************************************************
-            //                          To get the contact forces
+            //                      To get the contact forces, and contact positions
             //*************************************************************************************
             mjtNum conForce[d->ncon*6];
             mjtNum conJac[m->nv*(d->ncon*6)];
      
             int idx = 0;
-            //printf("nefc : %d\n", d->nefc);         // YT: This prints
             for (int i = 0; i<d->nefc; i++)
             {   
-                //printf(" %d\n", d->efc_type[i]);
-                if (d->efc_type[i] != mjCNSTR_CONTACT_PYRAMIDAL)     // Skips everytime
+                if (d->efc_type[i] != mjCNSTR_CONTACT_PYRAMIDAL)
                     continue;
                 conForce[idx] = d->efc_force[i];
-                
-                //printf(" I AM HERE TOO\n");
-            
+                            
                 for (int j = 0; j < m->nv; j++)
                 {
                     conJac[idx*m->nv + j] = d->efc_J[i*m->nv + j];
@@ -1039,9 +1035,45 @@ void simulation(void)
                 }
                 mjtNum resForce[m->nv];
                 mju_mulMatTVec(resForce, tempJac, tempConForce, m->nv, 6);
-                printf("Contact Force: %d X,Z:(%f,%f)\t \t", i, resForce[0], resForce[1]);
+                // printf("Contact Force: %d X, Z:(%f,%f)\t \t", i, resForce[0], resForce[1]);
+                //printf("Contact Force: %d Z: %f\t ", i, resForce[1]);
             }
             printf("\n");
+
+            // ALTERNATIVE METHOD to get contact force:
+            
+            mjtNum contactForce1[6];    // Extract 6D force:torque for one contact, in contact frame.
+            mjtNum contactForce2[6];
+            mj_contactForce(m, d, 0, contactForce1);
+            mj_contactForce(m, d, 1, contactForce2);
+            // for (int i =0; i<6; i++)
+            // {
+                printf("Contact force 1: %f\t", contactForce1[0]);  // [0] happens to be be the Z axis forces
+                printf("Contact force 2: %f\n", contactForce2[0]);
+            // }
+            
+
+            // GETTING CONTACT POSITIONS
+            //printf("Contacts : %d\n", d->ncon);
+            printf("Contact Pos 1 : %f \t", d->contact[0].pos[0]);  // pos[0] is the X axis
+            printf("Contact Pos 2 : %f \t\n", d->contact[1].pos[0]);
+
+
+            // CALCULATING CENTER OF PRESSURE
+            if (d->ncon == 2)
+            {
+                mjtNum CoP;
+                CoP = (contactForce1[0]*d->contact[0].pos[0] + contactForce2[0]*d->contact[1].pos[0]) / (contactForce1[0] + contactForce2[0]);
+                CoP = CoP - d->site_xpos[0];   // substract the site[0] position, as an approximation. Do trig later for actual position.
+                printf("CoP : %f\n", CoP*100);  // in centimeters
+            }
+            if (d->ncon == 1)
+            {
+                mjtNum CoP;
+                CoP = d->contact[0].pos[0] - d->site_xpos[0] - 0.5854/100; //there was some bias
+                printf("CoP : %f\n", CoP*100); // in centimeters
+            } 
+
             // ****************************************************************************************
             // ****************************************************************************************
 
