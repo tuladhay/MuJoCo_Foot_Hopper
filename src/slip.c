@@ -132,6 +132,11 @@ void forward(slip_t* s, state_t* state)
 	}
 }
 
+/******************************************************************************************
+*******************************************************************************************
+										ADVANCE STEP
+*******************************************************************************************
+*/
 void step(slip_t* s, state_t* state)
 {
 	for (int i = 0; i < nU; i++)
@@ -152,7 +157,13 @@ void step(slip_t* s, state_t* state)
 	The size of xpos is nbody x 3. So the data corresponding to body n is:
 	xpos[3*n], xpos[3*n+1], xpos[3*n+2].	- Emo Todorov
 	*/
+	get_CoP(s, state);
 }
+
+/******************************************************************************************
+******************************************************************************************/
+
+
 
 void set_state(slip_t* s, state_t* state)
 {
@@ -245,7 +256,7 @@ void get_motor_limits(motor_limits_t *lim)
 
 /***********************************************************************************
 ************************************************************************************
-										CONTROLLER
+					RAIBERT STYLE CONTROLLER FOR FOOT PLACEMENT
 ************************************************************************************
 */
 void controller(slip_t* s, state_t* state)
@@ -426,6 +437,43 @@ void controller(slip_t* s, state_t* state)
 
 /************************************************************************************
 *************************************************************************************
+							CALCULATE CENTER OF PRESSURE
+*************************************************************************************
+*/
+void get_CoP(slip_t* s, state_t* state)
+{
+	mjtNum contactForce1[6];    // Extract 6D force:torque for one contact, in contact frame.
+	mjtNum contactForce2[6];
+	mj_contactForce(m, s->d, 0, contactForce1);
+	mj_contactForce(m, s->d, 1, contactForce2);
+	    //printf("Contact force 1: %f\t", contactForce1[0]);  // [0] happens to be be the Z axis forces
+	    //printf("Contact force 2: %f\n", contactForce2[0]);
+
+	// GETTING CONTACT POSITIONS
+	//printf("Contacts : %d\n", d->ncon);
+	//printf("Contact Pos 1 : %f \t", s->d->contact[0].pos[0]);  // pos[0] is the X axis
+	//printf("Contact Pos 2 : %f \t\n", s->d->contact[1].pos[0]);
+
+	// CALCULATING CENTER OF PRESSURE
+	mjtNum CoP;
+	if (s->d->ncon == 2)
+	{
+	    CoP = (contactForce1[0]*s->d->contact[0].pos[0] + contactForce2[0]*s->d->contact[1].pos[0]) / (contactForce1[0] + contactForce2[0]);
+	    CoP = CoP - s->d->site_xpos[0];   // substract the site[0] position, as an approximation. Do trig later for actual position.
+	    //printf("CoP : %f\n", CoP*100);  // in centimeters
+	    //printf("site pos: %f\n", d->site_xpos[0]);
+	}
+	if (s->d->ncon == 1)
+	{
+	    CoP = s->d->contact[0].pos[0] - s->d->site_xpos[0] - 0.5854/100; //there was some bias
+	    //printf("CoP : %f\n", CoP*100); // in centimeters
+	} 
+	// NOTE that now, the RANGE FOR CPOS is 0 to 20 (centimeters), with 10 being the center of the foot
+	state->CoP = CoP;
+}
+
+/************************************************************************************
+*************************************************************************************
 							ANKLE TORQUE CONTROLLERS
 *************************************************************************************
 */
@@ -435,6 +483,7 @@ double ankle_tau_COP(state_t* state, double CoP_pos)
 	double torque = force * cos(state->q[leg_tau]) * CoP_pos;
 	return torque;
 }
+
 
 
 /************************************************************************************

@@ -4,7 +4,7 @@ close all
 addpath('src');
 addpath('controllers');
 
-slipObj = SLIP(1);
+slipObj = SLIP(0);
 
 nStep = 5000;
 q = zeros(slipObj.nQ, nStep);        % to store output
@@ -15,6 +15,7 @@ pos_slider = zeros(1,nStep);
 tau_motor = zeros(3,nStep);
 des_td_arr = zeros(1,nStep);
 apex_velocity = zeros(1,nStep);
+CoP = zeros(1,nStep);
 
 initState = slipObj.blank_state();   % all states set to 0, dynamic_state = 3
 initState.q = [0,1.2,0,0.45,0,0];    %[x, y, leg_tau, leg_motor, leg_spring, foot_joint]
@@ -49,6 +50,8 @@ for i = 1:nStep
    pos_slider(:,i) = state.q(4);
    tau_motor(:,i) = state.u;
    apex_velocity(:,i) = state.apex_velocity;
+   CoP(:,i) = state.CoP * 100; % centimeters
+   
    q(:,i) = state.q;
    qdot(:,i) = state.qd;
    
@@ -137,6 +140,14 @@ saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
 figure (12)
 plot(q(5,:));
 filename = 'toe spring position';
+title(filename);
+saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+filename = strcat(filename, '.jpg');
+saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+
+figure (13)
+plot(CoP(1,:));
+filename = 'Center of Pressure';
 title(filename);
 saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
 filename = strcat(filename, '.jpg');

@@ -958,7 +958,11 @@ void makeoptionstring(const char* name, char key, char* buf)
 }
 
 
-// advance simulation
+/************************************************************************************
+*************************************************************************************
+                                        SIMULATION
+*************************************************************************************
+*/
 void simulation(void)
 {
     // no model
@@ -1040,6 +1044,7 @@ void simulation(void)
             }
             printf("\n");
 
+            // ****************************************************************************************
             // ALTERNATIVE METHOD to get contact force:
             
             mjtNum contactForce1[6];    // Extract 6D force:torque for one contact, in contact frame.
@@ -1060,20 +1065,20 @@ void simulation(void)
 
 
             // CALCULATING CENTER OF PRESSURE
+            mjtNum CoP;
             if (d->ncon == 2)
             {
-                mjtNum CoP;
                 CoP = (contactForce1[0]*d->contact[0].pos[0] + contactForce2[0]*d->contact[1].pos[0]) / (contactForce1[0] + contactForce2[0]);
                 CoP = CoP - d->site_xpos[0];   // substract the site[0] position, as an approximation. Do trig later for actual position.
                 printf("CoP : %f\n", CoP*100);  // in centimeters
+                //printf("site pos: %f\n", d->site_xpos[0]);
             }
             if (d->ncon == 1)
             {
-                mjtNum CoP;
                 CoP = d->contact[0].pos[0] - d->site_xpos[0] - 0.5854/100; //there was some bias
                 printf("CoP : %f\n", CoP*100); // in centimeters
             } 
-
+            // NOTE that now, the RANGE FOR CPOS is 0 to 20 (centimeters), with 10 being the ceter of the foot
             // ****************************************************************************************
             // ****************************************************************************************
 

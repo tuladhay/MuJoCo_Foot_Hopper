@@ -21,6 +21,7 @@ typedef struct state_t {
 	double touchdown_time;
 	double stance_time;
 	double apex_velocity;
+	double CoP;
 } state_t;
 
 
@@ -50,6 +51,7 @@ void get_motor_limits(motor_limits_t *lim);
 
 void controller(slip_t* s, state_t* state);
 double ankle_tau_COP(state_t* state, double CoP_pos);
+void get_CoP(slip_t* s, state_t* state);
 
 slip_vis_t *vis_init(void);
 bool vis_draw(slip_vis_t *v, slip_t *s, bool bWaitUser);
