@@ -9,7 +9,6 @@
 #include "glfw3.h"
 #include "stdio.h"
 #include "string.h"
- 
 
 //-------------------------------- global variables -------------------------------------
 
@@ -1056,7 +1055,7 @@ void simulation(void)
                 printf("Contact force 1: %f\t", contactForce1[0]);  // [0] happens to be be the Z axis forces
                 printf("Contact force 2: %f\n", contactForce2[0]);
             // }
-            
+
 
             // GETTING CONTACT POSITIONS
             //printf("Contacts : %d\n", d->ncon);
@@ -1075,10 +1074,32 @@ void simulation(void)
             }
             if (d->ncon == 1)
             {
-                CoP = d->contact[0].pos[0] - d->site_xpos[0] - 0.5854/100; //there was some bias
+                CoP = d->contact[0].pos[0] - d->site_xpos[0]; //there was some bias
                 printf("CoP : %f\n", CoP*100); // in centimeters
             } 
             // NOTE that now, the RANGE FOR CPOS is 0 to 20 (centimeters), with 10 being the ceter of the foot
+
+
+
+            //-------------------------------- For Saving to CSV -----------------------------------
+            FILE *fp;
+ 
+            double CoP_write;
+            CoP_write = CoP;
+            char *filename="CoP_output.csv";
+             
+            fp=fopen(filename,"a");
+             
+            //fprintf(fp,"CoP");
+            fprintf(fp,"\n%f", CoP_write);
+            fclose(fp);
+
+
+
+
+
+
+
             // ****************************************************************************************
             // ****************************************************************************************
 

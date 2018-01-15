@@ -55,7 +55,7 @@ for i = 1:nStep
    q(:,i) = state.q;
    qdot(:,i) = state.qd;
    
-   if mod(i,2) == 0
+   if mod(i,1) == 0
        slipObj.draw();
    end
    
@@ -65,85 +65,85 @@ end
 % figure(2)
 % plot(pos_toe);
 
-figure(3)
-plot(pos_slider);
-filename = 'slide motor position';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(4)
-plot(tau_motor(1,:));
-filename = 'leg tau torque';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(5)
-plot(tau_motor(2,:));
-filename = 'leg slide motor torque';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(6)
-plot(des_td_arr);
-filename = 'desired touchdown angle';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(7)
-plot(qdot(1,:));
-filename = 'X velocity';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(8)
-plot(q(1,:));
-filename = 'X position';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(9)
-plot(q(3,:));
-filename = 'leg tau motor position';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(10)
-plot(apex_velocity(1,:));
-filename = 'Apex velocity';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure(11)
-plot(q(2,:));
-filename = 'Z position';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-
-figure (12)
-plot(q(5,:));
-filename = 'toe spring position';
-title(filename);
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
-filename = strcat(filename, '.jpg');
-saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% figure(3)
+% plot(pos_slider);
+% filename = 'slide motor position';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(4)
+% plot(tau_motor(1,:));
+% filename = 'leg tau torque';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(5)
+% plot(tau_motor(2,:));
+% filename = 'leg slide motor torque';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(6)
+% plot(des_td_arr);
+% filename = 'desired touchdown angle';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(7)
+% plot(qdot(1,:));
+% filename = 'X velocity';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(8)
+% plot(q(1,:));
+% filename = 'X position';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(9)
+% plot(q(3,:));
+% filename = 'leg tau motor position';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(10)
+% plot(apex_velocity(1,:));
+% filename = 'Apex velocity';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure(11)
+% plot(q(2,:));
+% filename = 'Z position';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% 
+% figure (12)
+% plot(q(5,:));
+% filename = 'toe spring position';
+% title(filename);
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
+% filename = strcat(filename, '.jpg');
+% saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
 
 figure (13)
 plot(CoP(1,:));
@@ -154,3 +154,11 @@ filename = strcat(filename, '.jpg');
 saveas(gcf, strcat(pwd, strcat('/Plot/', filename)));
 
 slipObj.close();
+
+
+%%
+% filename = "CoP_output.csv";
+% data = csvread(filename, 1,0);
+% figure(14)
+% title(filename);
+% plot(data);

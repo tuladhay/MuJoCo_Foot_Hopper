@@ -8,6 +8,7 @@
 #include "glfw3.h"
 #include "stdlib.h"
 #include "string.h"
+
 /*
 This program is meant to include functionality of a basic raibert hopper, while having
 all the functions necessary to interact with MuJoCo. So it is all in one place so that
@@ -283,7 +284,7 @@ void controller(slip_t* s, state_t* state)
 	bool toe_bias = false;				// Set to True for lift off from toe
 	double ankle_tau_d = 0;
 	double CoP_pos = 0.1;				// Center of Pressure location where you want it to be
-	int ankle_actuation_option = 3;		// see options below
+	int ankle_actuation_option = 0;		// see options below
 	// 0: No ankle torque
 	// 1: Torque scaling*
 	// 2: Angle scaling* (*wrt previous stance time)
@@ -395,7 +396,7 @@ void controller(slip_t* s, state_t* state)
 				{	
 					case 0:
 					{
-						state->u[input_foot_joint] = 0;
+						state->u[input_foot_joint] = 1000;
 					}
 					break;
 
@@ -442,6 +443,65 @@ void controller(slip_t* s, state_t* state)
 */
 void get_CoP(slip_t* s, state_t* state)
 {
+	//*********************** METHOD 1, TAYLOR'S METHOD *****************************
+	mjtNum conForce[s->d->ncon*6];
+    mjtNum conJac[m->nv*(s->d->ncon*6)];
+    mjtNum zForce[s->d->ncon];
+
+    int idx = 0;
+    for (int i = 0; i<s->d->nefc; i++)
+    {   
+        if (s->d->efc_type[i] != mjCNSTR_CONTACT_PYRAMIDAL)
+            continue;
+        conForce[idx] = s->d->efc_force[i];
+                    
+        for (int j = 0; j < m->nv; j++)
+        {
+            conJac[idx*m->nv + j] = s->d->efc_J[i*m->nv + j];
+        }
+        idx++;
+    }// Till here we have grabbed the constrained Forces and the constrained Jacobian in arrays
+
+/*
+    for (int i = 0; i < s->d->ncon; i++)
+    {
+        mjtNum tempJac[m->nv*6];        // for a single contact
+        mjtNum tempConForce[6];         // for a single contact
+
+        for (int j = 0; j < 6; j++)
+        {
+            tempConForce[j] = conForce[i*6 + j];
+            for (int k = 0; k < m->nv; k++)
+            {
+                tempJac[j*m->nv + k] = conJac[i*(6*m->nv) + j*m->nv + k];
+            }
+        }
+        mjtNum resForce[m->nv];
+        mju_mulMatTVec(resForce, tempJac, tempConForce, m->nv, 6);
+        // printf("Contact Force: %d X, Z:(%f,%f)\t \t", i, resForce[0], resForce[1]);
+        //printf("Contact Force: %d Z: %f\t ", i, resForce[1]);
+        zForce[i] = resForce[1];	// getting the Z forces, index[0] are the X forces, according to the XML
+    }
+
+    mjtNum CoP = 0;
+	if (s->d->ncon == 2)
+	{
+	    CoP = (zForce[0]*s->d->contact[0].pos[0] + zForce[1]*s->d->contact[1].pos[0]) / (zForce[0] + zForce[1]);
+	    CoP = CoP - s->d->site_xpos[0];   // substract the site[0] position, as an approximation. Do trig later for actual position.
+	}
+	if (s->d->ncon == 1)
+	{
+	    CoP = s->d->contact[0].pos[0] - s->d->site_xpos[0] - 0.5854/100; //there was some bias
+	} 
+	// NOTE that now, the RANGE FOR CPOS is 0 to 20 (centimeters), with 10 being the center of the foot
+	state->CoP = CoP;
+*/
+
+
+
+	//*********************************************************************************
+	//********************** METHOD 2, USING INBUILT FUNCTION CALL ********************
+
 	mjtNum contactForce1[6];    // Extract 6D force:torque for one contact, in contact frame.
 	mjtNum contactForce2[6];
 	mj_contactForce(m, s->d, 0, contactForce1);
@@ -455,22 +515,40 @@ void get_CoP(slip_t* s, state_t* state)
 	//printf("Contact Pos 2 : %f \t\n", s->d->contact[1].pos[0]);
 
 	// CALCULATING CENTER OF PRESSURE
-	mjtNum CoP;
+	mjtNum CoP = 0;
 	if (s->d->ncon == 2)
 	{
 	    CoP = (contactForce1[0]*s->d->contact[0].pos[0] + contactForce2[0]*s->d->contact[1].pos[0]) / (contactForce1[0] + contactForce2[0]);
 	    CoP = CoP - s->d->site_xpos[0];   // substract the site[0] position, as an approximation. Do trig later for actual position.
-	    //printf("CoP : %f\n", CoP*100);  // in centimeters
-	    //printf("site pos: %f\n", d->site_xpos[0]);
 	}
 	if (s->d->ncon == 1)
 	{
-	    CoP = s->d->contact[0].pos[0] - s->d->site_xpos[0] - 0.5854/100; //there was some bias
-	    //printf("CoP : %f\n", CoP*100); // in centimeters
+	    // CoP = s->d->contact[0].pos[0] - s->d->site_xpos[0]; //there was some bias
+	     //CoP = -1*s->d->contact[0].pos[0];
+	    //CoP = -1*s->d->site_xpos[0];
+	    CoP = (-1*s->d->contact[0].pos[0] + s->d->site_xpos[0])*10 +0.1;
 	} 
 	// NOTE that now, the RANGE FOR CPOS is 0 to 20 (centimeters), with 10 being the center of the foot
 	state->CoP = CoP;
-}
+
+	//-------------------------------- For Saving to CSV -----------------------------------
+	//--------------------------------------------------------------------------------------
+    FILE *fp;
+
+    double CoP_write;
+    CoP_write = CoP;
+    char *filename="CoP_output.csv";
+     
+    fp=fopen(filename,"a");
+     
+    //fprintf(fp,"CoP");
+    fprintf(fp,"\n%f", CoP_write);
+    fclose(fp);
+
+
+}//get_CoP
+
+
 
 /************************************************************************************
 *************************************************************************************
@@ -571,6 +649,8 @@ static bool bUserInput = false;
 bool vis_draw(slip_vis_t *v, slip_t *s, bool bWaitUser)
 {
 	bool doOnce = true;
+	v->opt.flags[10] = true;	// to VISUALIZE THE CONTACT POINTS
+	v->opt.flags[11] = true;	// to VISUALIZE THE CONTACT FORCES
 
 	while (bWaitUser || doOnce)
 	{
