@@ -284,7 +284,7 @@ void controller(slip_t* s, state_t* state)
 	bool toe_bias = false;				// Set to True for lift off from toe
 	double ankle_tau_d = 0;
 	double CoP_pos = 0.1;				// Center of Pressure location where you want it to be
-	int ankle_actuation_option = 0;		// see options below
+	int ankle_actuation_option = 1;		// see options below
 	// 0: No ankle torque
 	// 1: Torque scaling*
 	// 2: Angle scaling* (*wrt previous stance time)
@@ -396,13 +396,13 @@ void controller(slip_t* s, state_t* state)
 				{	
 					case 0:
 					{
-						state->u[input_foot_joint] = 1000;
+						state->u[input_foot_joint] = 0;
 					}
 					break;
 
 					case 1:		// scaling desired ankle torque by later half of stance time
 					{			// need braces here because I am defining a variable inside case
-						double target_torque = 50;		// Not guaranteed to reach this. Since stance time is estimate using old stance time
+						double target_torque = 100;		// Not guaranteed to reach this. Since stance time is estimate using old stance time
 						state->u[input_foot_joint]	= ((s->d->time - rec_time)/(state->stance_time/2)) * target_torque;
 					}
 					break; 		// for time scaling torque

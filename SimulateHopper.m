@@ -162,3 +162,8 @@ slipObj.close();
 % figure(14)
 % title(filename);
 % plot(data);
+
+% y = filter(Hlp,CoP(1,:)); % Append D zeros to the input data
+% plot(y)
+% figure
+% plot(data);
