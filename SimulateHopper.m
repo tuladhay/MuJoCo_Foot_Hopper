@@ -1,8 +1,7 @@
-clear raibertController
 clear all
 close all
 addpath('src');
-addpath('controllers');
+addpath('controllers'); 
 
 slipObj = SLIP(0);
 

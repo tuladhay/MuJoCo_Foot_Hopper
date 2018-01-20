@@ -3,9 +3,9 @@ classdef SLIP < handle
     %   Detailed explanation goes here
     
     properties
-        s %slip_t pointer
-        v %slip_vis_t pointer
-        st %state_t pointer
+        s       %slip_t pointer
+        v       %slip_vis_t pointer
+        st      %state_t pointer
         nQ = 6;
         nU = 3;
         libName;
@@ -13,6 +13,7 @@ classdef SLIP < handle
         
         flight_time;
     end
+    
     
     methods
         
@@ -37,16 +38,20 @@ classdef SLIP < handle
             end
         end   
         
+   
         function set_motor_command(obj,u)
            obj.st.Value.u(1) = u(1); 
-           obj.st.Value.u(2) = u(2); 
+           obj.st.Value.u(2) = u(2);
+           obj.st.Value.u(3) = u(3);
         end
+        
         
         function step(obj)
             calllib(obj.libName, 'step', obj.s, obj.st);
         end
         
         
+        % THIS CONTROLLER CALLS THE RAIBERT STYLE CONTROLLER IN SLIP.C
         function controller(obj)
             calllib(obj.libName, 'controller', obj.s, obj.st);
         end
@@ -67,8 +72,8 @@ classdef SLIP < handle
             obj.st.Value.touchdown_time = state.touchdown_time;
             obj.st.Value.stance_time = state.stance_time;
             obj.st.Value.apex_velocity = state.apex_velocity;
-            
             calllib(obj.libName, 'set_state', obj.s, obj.st);
+            % Also check set_state in slip.c
         end
         
         function state = blank_state(obj)
