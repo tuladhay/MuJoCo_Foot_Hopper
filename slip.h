@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 
-#define nQ 6	// count the number of joints in the xml file
+#define nQ 7	// count the number of joints in the xml file
 #define nU 3	// count the number of inputs in the xml file
 #define nC 2	// count the number of sites in the xml file
 
@@ -16,13 +16,21 @@ typedef struct state_t {
 	double u[nU];
 	double t;
 	double cpos[nC];
-	int dynamic_state;		// this is for the raibert hopper control
+	int dynamic_state;
 	double des_td_angle;
 	double touchdown_time;
 	double stance_time;
 	double apex_velocity;
 	double CoP;
 } state_t;
+
+typedef struct EoM_fields
+{
+	double H[nQ*nQ];		// Mass matrix
+	double h[nQ];			// Coriolis, centripetal, gravity, spring
+	double J[6*nQ];			// Jacobian to contact point
+	double Jdot_Qdot[6*nC];		// Jdot_Qdot, contact accelerations, J*qdd + Jdot*qdot = xdd, set qdd = 0
+} EoM_fields;
 
 
 typedef struct pos_limits_t {
@@ -52,6 +60,8 @@ void get_motor_limits(motor_limits_t *lim);
 void controller(slip_t* s, state_t* state);
 double ankle_tau_COP(state_t* state, double CoP_pos);
 void get_CoP(slip_t* s, state_t* state);
+
+void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM);
 
 slip_vis_t *vis_init(void);
 bool vis_draw(slip_vis_t *v, slip_t *s, bool bWaitUser);

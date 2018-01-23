@@ -6,18 +6,21 @@ classdef SLIP < handle
         s       %slip_t pointer
         v       %slip_vis_t pointer
         st      %state_t pointer
-        nQ = 6;
+        eom     %eom_fields pointer
+        nQ = 7;
         nU = 3;
+        nC = 2;
         libName;
         deltaT = 0.002;
-        
-        flight_time;
+
     end
     
     
     methods
         
-        %Load the SLIP library and initialize the model and visual
+        % ****************** General Essential Functions *****************
+        % ****************************************************************
+        
         function obj = SLIP(enableVisuals)
             if ispc()
                 obj.libName = 'slip';
@@ -32,6 +35,9 @@ classdef SLIP < handle
             
             obj.s = calllib(obj.libName,'init','.');
             obj.st = libpointer('state_t',blank_state(obj));
+
+            obj.eom = libpointer('EoM_fields', blank_eom_fields(obj));
+            
             obj.v = [];
             if(enableVisuals == 1)
                 obj.v = calllib(obj.libName, 'vis_init');
@@ -49,13 +55,7 @@ classdef SLIP < handle
         function step(obj)
             calllib(obj.libName, 'step', obj.s, obj.st);
         end
-        
-        
-        % THIS CONTROLLER CALLS THE RAIBERT STYLE CONTROLLER IN SLIP.C
-        function controller(obj)
-            calllib(obj.libName, 'controller', obj.s, obj.st);
-        end
-        
+                
         
         function state = get_state(obj)
             state = obj.st.Value;
@@ -76,6 +76,7 @@ classdef SLIP < handle
             % Also check set_state in slip.c
         end
         
+        
         function state = blank_state(obj)
            state.q = zeros(1, obj.nQ);
            state.qd = state.q;
@@ -89,6 +90,35 @@ classdef SLIP < handle
            state.apex_velocity = 0;
         end
         
+        
+        % **************** Optimization Related Functions ****************
+        % ****************************************************************
+        
+        function eom_fields = blank_eom_fields(obj)
+            eom_fields.H = zeros(1, obj.nQ*obj.nQ);
+            eom_fields.h = zeros(1, obj.nQ);
+            eom_fields.J = zeros(1, 6*obj.nQ);
+            eom_fields.Jdot_Qdot = zeros(1, 6*obj.nC);
+        end
+        
+        
+        function eom_fields = get_eom(obj)
+            calllib(obj.libName, 'get_EoM_fields', obj.s, obj.st, obj.eom);
+            eom_fields = obj.eom.Value;
+            
+        end
+        
+        
+        % ***************** Raibert Controller Function ******************
+        % ****************************************************************
+                
+        function controller(obj)
+            calllib(obj.libName, 'controller', obj.s, obj.st);
+        end
+         
+       
+        % ************* Rendering and Close Functions ********************
+        % ****************************************************************
                 
         function rendered = draw(obj)
             if ~isempty(obj.v)
@@ -104,6 +134,7 @@ classdef SLIP < handle
             obj.s = [];
             obj.v = [];
             obj.st = [];
+            obj.eom = [];
             unloadlibrary(obj.libName);
         end
     end

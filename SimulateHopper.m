@@ -3,7 +3,7 @@ close all
 addpath('src');
 addpath('controllers'); 
 
-slipObj = SLIP(0);
+slipObj = SLIP(1);
 
 nStep = 5000;
 q = zeros(slipObj.nQ, nStep);        % to store output
@@ -26,7 +26,7 @@ for i = 1:nStep
    %slipObj.set_motor_command([u(2) u(1)]); 
    slipObj.step();
    state = slipObj.get_state();
-   slipObj.controller();
+   %slipObj.controller();
 
    dyn = state.dynamic_state;
    des_td_angle = state.des_td_angle;

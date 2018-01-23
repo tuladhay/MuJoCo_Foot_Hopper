@@ -10,9 +10,7 @@
 #include "string.h"
 
 /*
-This program is meant to include functionality of a basic raibert hopper, while having
-all the functions necessary to interact with MuJoCo. So it is all in one place so that
-the raibert controller can be loaded as a library.
+This program is meant to implement trajectory optimization for a SLIP with foot.
 */
 
 static bool m_bMJActivated = false;
@@ -23,10 +21,11 @@ bool flag = false;
 // See the XML file for the DOF/joint details
 #define rootx 0
 #define rootz 1
-#define leg_tau 2		// actuator here
-#define leg_motor 3		// actuator here
-#define spring 4		// toe spring
-#define foot_joint 5	// actuator here
+#define rot 2
+#define leg_tau 3		// actuator here
+#define leg_motor 4		// actuator here
+#define spring 5		// toe spring
+#define foot_joint 6	// actuator here
 
 #define compression 1
 #define thrust 2
@@ -70,7 +69,7 @@ slip_t* init(const char *basedir)
 		keyfile[basedirlen] = '/';
 		strcpy(keyfile + basedirlen + 1, keyfilename);// Construct XML file path
 		char *xmlfile;
-		const char xmlfilename[] = "slip_with_foot.xml";
+		const char xmlfilename[] = "slip_with_foot_trajOpt.xml";
 		xmlfile = malloc(basedirlen + 1 + sizeof xmlfilename);
 		strncpy(xmlfile, basedir, basedirlen);
 		xmlfile[basedirlen] = '/';
@@ -95,13 +94,11 @@ slip_t* init(const char *basedir)
 
     slip_t *s = calloc(1, sizeof(slip_t));
     s->d = mj_makeData(m); // d is a pointer to mjData
-// Once both mjModel and mjData are allocated and initialized, we can call the various simulation functions. 
-
     return s;
 }
 
 void forward(slip_t* s, state_t* state)
-{
+{	//  Forward dynamics: same as mj_step but do not integrate in time. 
 
 	mju_zero(s->d->xfrc_applied, m->nbody*6); //clear applied forces
 	//wipe out data and replace with state info
@@ -252,6 +249,147 @@ void get_motor_limits(motor_limits_t *lim)
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+/***********************************************************************************
+************************************************************************************
+							ALL OPTIMIZATION RELATED FUNCTIONS
+************************************************************************************/
+
+void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
+{
+	// This function will return the extract the necessary EoM fields and populate it
+	// so that in the Matlab side, I can calculate qdd for the dynamic constraints
+	mjtNum mass[nQ*nQ];
+	mjtNum h[nQ];
+	mjtNum J[6*nQ];		// 3*nQ for each contact point. For two contact points
+	mjtNum Jdot_Qdot[6*nC];	// temporarily store acceleration for each site in temp_acc[6]
+	
+	mju_zero(mass, nQ*nQ);
+	mju_zero(h, nQ);
+	mju_zero(J, 6*nQ);
+	mju_zero(Jdot_Qdot, 6*nC);
+	mjtNum tempJ[3*nQ];
+	mju_zero(tempJ, 3*nQ);
+	mjtNum temp_cacc[6];		// contact acceleration, J*qdd + Jdot*qdot = xdd, set qdd = 0
+	mju_zero(temp_cacc, 6);
+
+	//setting other zeros....
+	mju_zero(s->d->qacc, nQ); // make sure the size is correct
+
+	mj_forward(m, s->d);
+	// calculates the forward dynamics
+	// this will not forward time, and update only vel and acc, not pos
+	// mj_step() calculates dynamics and forwards in time
+
+	// Get mass matrix (actually in array)
+	mj_fullM(m, mass, s->d->qM);
+	// d->qM is the sparse mass matrix
+	for (int i = 0; i < (nQ*nQ); i++)
+	{	// Copy into EoM struct
+		EoM->H[i] = mass[i];
+	}
+
+	for (int i = 0; i < nQ; i++)
+	{	// Extract coriolis, centripetal, gravity, spring terms
+		h[i] = s->d->qfrc_bias[i];
+	}
+	// Copy h to EoM struct
+	for (int i = 0; i < nQ; i++)
+	{
+		EoM->h[i] = h[i];
+	}
+
+	// Extract J and Jdot_Qdot
+	for (int i = 0; i < nC; i++)
+	{	// Get the Jacobian for contact site[i]
+		mj_jacSite(m, s->d, tempJ, NULL, i); // 3*nQ
+
+		for (int j = 0; j < 3*nQ; j++)
+		{	// stack both contact jacobians into one J array
+			J[j + i*3*nQ] = tempJ[j];
+		}
+
+		// Get the contact site accelerations
+		// Compute object 6D acceleration in object-centered frame, world/local orientation. 
+		mj_objectAcceleration(m, s->d, mjOBJ_SITE, i, temp_cacc, 0);
+		for (int j = 0; j < 6; j++)
+		{
+			Jdot_Qdot[j + i*6] = temp_cacc[j];
+		}
+	}
+	// Copy J into EoM
+	for (int i = 0; i < 6*nQ; i++)
+	{	// Copying J into EoM struct
+		EoM->J[i] = J[i];
+	}
+
+	// Copy Jdot_Qdot into EoM
+	for (int i = 0; i < 6*nC; i++)
+	{
+		EoM->Jdot_Qdot[i] = Jdot_Qdot[i];
+	}
+
+
+}// get_EoM_fields
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
