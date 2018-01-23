@@ -109,6 +109,66 @@ classdef SLIP < handle
         end
         
         
+        function qdd = get_qdd(obj)
+            % Function to get necessary quantities from MuJoCo,
+            % and calculate qdd and return qdd
+            eom_copy = obj.get_eom();   % I know it is redundant to make copy
+            
+            H = reshape(eom_copy.H, [obj.nQ, obj.nQ]);
+            if (H - H')
+                disp('Mass matrix not symmetric');
+            end
+
+            % Get the h matrix for coriolis, centripetal, gravity and spring terms
+            h = reshape(eom_copy.h, [obj.nQ, 1]);
+            % need to make sure this is correct
+
+            % Get the contact Jacobian
+            J = reshape(eom_copy.J, [6, obj.nQ]);
+            % need to make sure this is correct
+            % the rows 1, 2, 3 are for contact site 0
+            % the rows 4, 5, 6 are for contact site 1
+
+            % J*Qdd + Jdot*Qdot = xdd, set qdd to zero, and get JdotQdot = xdd
+            Jdot_Qdot = reshape(eom_copy.Jdot_Qdot, [6, 2]);
+
+            % Now I have everything I need to calculate qdd:
+            % These equations are directly from Wensing paper:
+            % "Generation of Dynamic Humanoid Behaviors Through Task-Space Control ..."
+
+            Tau = zeros(1, obj.nU);     % Torques
+            Sa = [0; 0; 0; 1; 1; 0; 1]; % Selector matrix premultiplied by Tau
+            I = eye(obj.nQ);
+            Hinv = pinv(H);          % Is this the correct way to take inverse?
+            JHinvJT = J*(Hinv*J');   % How to do pseudo-inverse?
+            Ns = I - J'*JHinvJT*J*Hinv;
+            gamma = J'*JHinvJT*Jdot_Qdot;
+
+            qdd = Hinv*(Ns'*Sa - Ns'*h - gamma);      % maybe group Ns
+        end
+        
+        
+        function [lb, ub] = get_state_limits(obj)
+            bounds.lb = zeros(1, obj.nQ);
+            bounds.ub = zeros(1,obj.nQ);
+            bounds = libpointer('pos_limits_t', bounds);
+            calllib('libslip', 'get_joint_limits', bounds);
+            lb = bounds.Value.lb;
+            ub = bounds.Value.ub;
+        end
+        
+        
+        function [lb, ub] = get_motor_limits(obj)
+            bounds.lb = zeros(1, obj.nU);
+            bounds.ub = zeros(1,obj.nU);
+            bounds = libpointer('motor_limits_t', bounds);
+            calllib('libslip', 'get_motor_limits', bounds);
+            lb = bounds.Value.lb;
+            ub = bounds.Value.ub;
+        end
+        
+        
+            
         % ***************** Raibert Controller Function ******************
         % ****************************************************************
                 
