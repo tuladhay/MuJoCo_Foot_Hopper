@@ -102,17 +102,16 @@ classdef SLIP < handle
         end
         
         
-        function eom_fields = get_eom(obj)
-            calllib(obj.libName, 'get_EoM_fields', obj.s, obj.st, obj.eom);
+        function eom_fields = get_eom(obj, state)
+            calllib(obj.libName, 'get_EoM_fields', obj.s, state, obj.eom);
             eom_fields = obj.eom.Value;
-            
         end
         
         
-        function qdd = get_qdd(obj)
+        function qdd = get_qdd(obj, state)
             % Function to get necessary quantities from MuJoCo,
             % and calculate qdd and return qdd
-            eom_copy = obj.get_eom();   % I know it is redundant to make copy
+            eom_copy = obj.get_eom(state);   % I know it is redundant to make copy
             
             H = reshape(eom_copy.H, [obj.nQ, obj.nQ]);
             if (H - H')
@@ -137,6 +136,7 @@ classdef SLIP < handle
             % "Generation of Dynamic Humanoid Behaviors Through Task-Space Control ..."
 
             Tau = zeros(1, obj.nU);     % Torques
+            
             Sa = [0; 0; 0; 1; 1; 0; 1]; % Selector matrix premultiplied by Tau
             I = eye(obj.nQ);
             Hinv = pinv(H);          % Is this the correct way to take inverse?

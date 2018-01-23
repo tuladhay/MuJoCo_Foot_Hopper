@@ -283,7 +283,21 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 	mju_zero(temp_cacc, 6);
 
 	//setting other zeros....
-	mju_zero(s->d->qacc, nQ); // make sure the size is correct
+	mju_zero(s->d->qacc, nQ);
+	mju_zero(s->d->xfrc_applied, m->nbody*6);
+	mju_zero(s->d->qacc, m->nv);
+	mju_zero(s->d->qacc_warmstart, m->nv);
+	mju_zero(s->d->qfrc_applied, m->nv);
+
+	//wipe out data and replace with state info
+	for (int i = 0; i < nQ; i++)
+	{
+		s->d->qpos[i] = state->q[i];
+		s->d->qvel[i] = state->qd[i];
+	}
+
+	for (int i = 0; i < nU; i++)
+		s->d->ctrl[i] = state->u[i];
 
 	mj_forward(m, s->d);
 	// calculates the forward dynamics
@@ -340,49 +354,6 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 
 
 }// get_EoM_fields
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

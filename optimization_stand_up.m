@@ -1,5 +1,3 @@
-% START STATE AS CROUCHED, AND END STATE AS STANDING
-
 clear
 close all
 global nodes
