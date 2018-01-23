@@ -26,8 +26,8 @@ Beq = [];
 [u_lb, u_ub] = s.get_motor_limits();
 
 % Ordered by: time | positions | velocities | control
-lb = [0;    repmat(q_lb', s.N, 1); ones(s.N * s.nQ, 1) * -Inf; repmat(u_lb', s.N, 1)];
-ub = [Inf;  repmat(q_ub', s.N, 1); ones(s.N * s.nQ, 1) * Inf; repmat(u_ub', s.N, 1)];
+lb = [0;    repmat(q_lb', nodes, 1); ones(nodes * s.nQ, 1) * -Inf; repmat(u_lb', nodes, 1)];
+ub = [Inf;  repmat(q_ub', nodes, 1); ones(nodes * s.nQ, 1) * Inf; repmat(u_ub', nodes, 1)];
 
 % Options for fmincon
 options = optimoptions(@fmincon, 'TolFun', 0.00000001, 'MaxIter', 10000, ...
@@ -40,18 +40,6 @@ x = fmincon(time_min, x0, A, b, Aeq, Beq, lb, ub, constraint_func, options);
 
 
 
-
-
-
-%%
-% s = SLIP(0);
-% nStep = 100;
-% for i = 1:nStep
-%     qdd = s.get_qdd();
-%     % this will call get_eom and calculate qdd and return it
-% end
-% 
-% s.close();
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %                          Optimization Setup                             %

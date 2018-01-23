@@ -1,5 +1,6 @@
 function [c, ceq] = optimization_constraints(x, s)
     % Calculate the timestep
+    nodes = 20;
     sim_time = x(1);
     delta_time = sim_time / nodes;
     
@@ -22,13 +23,13 @@ function [c, ceq] = optimization_constraints(x, s)
     % ********************************************************************
     % ********** Constrain Initial Positions and Velocities **************
     c = [];
-    ceq = [START CONSTRAINTS]
+    % fmincon's equality constraints are given as a vector of values to drive to zero
+    ceq = []; % NOT SURE WHAT TO PUT FOR START CONSTRAINTS
     
     
     for i = 1 : (nodes - 1)      
 
         state = s.blank_state();
-        
         % States at the beginning of particular time interval
         state.q = pos(i,:)';
         state.qd = vel(i,:)';
@@ -43,8 +44,11 @@ function [c, ceq] = optimization_constraints(x, s)
         proj_v = vel(i,:)' + qdd_c1.*delta_time;
         proj_x = pos(i,:)' + proj_v.*delta_time;
         
-        ceq = [????????????????];
+        % fmincon's equality constraints are given as a vector of values to drive to zero
+        ceq = [ceq ; pos(i+1,:)' - proj_x; vel(i+1,:)' - proj_v];
     end
     
-    ceq = [ceq; END CONSTRAINTS]
+    % NOT SURE ABOUT THIS!
+    ceq = [ceq; pos(nodes, 2)-0.85; vel(nodes,:)'];
+    
     end
