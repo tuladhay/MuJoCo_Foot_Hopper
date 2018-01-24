@@ -12,6 +12,7 @@ classdef SLIP < handle
         nC = 2;
         libName;
         deltaT = 0.002;
+        nodes = 20;
 
     end
     
@@ -98,7 +99,7 @@ classdef SLIP < handle
             eom_fields.H = zeros(1, obj.nQ*obj.nQ);
             eom_fields.h = zeros(1, obj.nQ);
             eom_fields.J = zeros(1, 6*obj.nQ);
-            eom_fields.Jdot_Qdot = zeros(1, 6*obj.nC);
+            eom_fields.Jdot_Qdot = zeros(1, 3*obj.nC);
         end
         
         
@@ -129,22 +130,21 @@ classdef SLIP < handle
             % the rows 4, 5, 6 are for contact site 1
 
             % J*Qdd + Jdot*Qdot = xdd, set qdd to zero, and get JdotQdot = xdd
-            Jdot_Qdot = reshape(eom_copy.Jdot_Qdot, [6, 2]);
+            Jdot_Qdot = reshape(eom_copy.Jdot_Qdot, [6, 1]);
 
             % Now I have everything I need to calculate qdd:
             % These equations are directly from Wensing paper:
             % "Generation of Dynamic Humanoid Behaviors Through Task-Space Control ..."
 
-            Tau = zeros(1, obj.nU);     % Torques
-            
-            Sa = [0; 0; 0; 1; 1; 0; 1]; % Selector matrix premultiplied by Tau
+            Tau = state.u;     % Torques
+            Sa = [0; 0; 0; Tau(1); Tau(2); 0; Tau(3)]; % Selector matrix premultiplied by Tau
             I = eye(obj.nQ);
             Hinv = pinv(H);          % Is this the correct way to take inverse?
             JHinvJT = J*(Hinv*J');   % How to do pseudo-inverse?
-            Ns = I - J'*JHinvJT*J*Hinv;
+            Ns = I - J'*JHinvJT*J*Hinv;     % Ns is Ns transpose in the paper
             gamma = J'*JHinvJT*Jdot_Qdot;
 
-            qdd = Hinv*(Ns'*Sa - Ns'*h - gamma);      % maybe group Ns
+            qdd = Hinv*(Ns*Sa - Ns*h - gamma);      % maybe group Ns
         end
         
         
