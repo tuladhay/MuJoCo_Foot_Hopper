@@ -642,17 +642,17 @@ void get_CoP(slip_t* s, state_t* state)
 
 	//-------------------------------- For Saving to CSV -----------------------------------
 	//--------------------------------------------------------------------------------------
-    FILE *fp;
+    // FILE *fp;
 
-    double CoP_write;
-    CoP_write = CoP;
-    char *filename="CoP_output.csv";
+    // double CoP_write;
+    // CoP_write = CoP;
+    // char *filename="CoP_output.csv";
      
-    fp=fopen(filename,"a");
+    // fp=fopen(filename,"a");
      
-    //fprintf(fp,"CoP");
-    fprintf(fp,"\n%f", CoP_write);
-    fclose(fp);
+    // //fprintf(fp,"CoP");
+    // fprintf(fp,"\n%f", CoP_write);
+    // fclose(fp);
 
 
 }//get_CoP
