@@ -30,13 +30,13 @@
 	<body name="left_toe" pos="0 0 -0.3"><!-- TOE -->
 	    	<joint name='left_spring' type='slide' axis='0 0 1' pos='0 0 0' limited='true' range='-0.1 0.3' damping='100' armature='0' stiffness='10000'/>
 	        <geom name="left_toe_geom"  contype='2' conaffinity='2' type="sphere" size="0.05" friction="0.1" rgba="0.1 0.7 0.2 1"/>
-	        <site name="left_contact" type="sphere" pos="0 0 -0.05" size="0.005"/>
+	        <!---<site name="left_contact" type="sphere" pos="0 0 -0.05" size="0.005"/>--->
                 <body name="foot" pos="0 0 -0.05"><!-- FOOT -->
             		<joint name="foot_joint" type="hinge" pos="0 0 0" axis="0 -1 0" range="-20 20" armature='0' stiffness='0' damping='1'/>
-            		<geom name="foot_geom" type="capsule" fromto="-0.1 0 0 0.1 0 0" size="0.02" friction="2.0" condim='4'/>
+            		<geom name="foot_geom" type="capsule" fromto="-0.1 0 0 0.1 0 0" size="0.05" friction="2.0" condim='4'/>
 			<site name="foot_heel" type="sphere" pos="-0.10 0 -0.02" size="0.015"/>
 			<site name="foot_toe" type="sphere" pos="0.10 0 -0.02" size="0.015"/>
-			<inertial pos='0 0 0' mass='0.15' diaginertia = '0.2 0.2 0.2'/>
+			<!--<inertial pos='0 0 0' mass='0.15' diaginertia = '0.2 0.2 0.2'/>-->
           	</body>
         </body>
       </body>
@@ -60,7 +60,7 @@
   <actuator>
     <!-- LEFT LEG ACTUATORS -->
     <motor joint="left_leg_tau" ctrlrange="-50.0 50.0" ctrllimited="true" />
-    <motor joint="left_leg_motor" ctrlrange="-200.0 150.0" ctrllimited="true" />
+    <motor joint="left_leg_motor" ctrlrange="-500.0 500.0" ctrllimited="true" />
     <motor joint="foot_joint" ctrlrange="-200.0 200.0" ctrllimited="true" />
     <!-- RIGHT LEG ACTUATORS -->
     <!--

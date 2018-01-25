@@ -124,7 +124,7 @@ classdef SLIP < handle
             % need to make sure this is correct
 
             % Get the contact Jacobian
-            J = reshape(eom_copy.J, [6, obj.nQ]);
+            J = reshape(eom_copy.J, [obj.nQ, 6])';
             % need to make sure this is correct
             % the rows 1, 2, 3 are for contact site 0
             % the rows 4, 5, 6 are for contact site 1

@@ -3,7 +3,7 @@ close all
 
 s = SLIP(0);
 
-%% Just to visualize the initial state, pass SLIP(1)
+% Just to visualize the initial state, pass SLIP(1)
 % 
 % init_state = s.blank_state();
 % init_state.q = [0 0.5125 0 0 0 0 0];
@@ -18,7 +18,7 @@ s = SLIP(0);
 %    
 % end
 % s.close();
-%%
+
 
 
 %minimize the simulation time
@@ -28,6 +28,9 @@ time_min = @(x) x(1);
 % time[1],  
 x0 = zeros((s.nQ + s.nQ +s.nU)*s.nodes + 1, 1);
 x0(1,1) = 1.0; %time guess
+% for i =(2*s.nQ*s.nodes + 2):length(x0)
+%     x0(i) = 1;
+% end
 
 % x0 = x;
 
@@ -52,7 +55,10 @@ ub = [Inf;  repmat(q_ub', s.nodes, 1); ones(s.nodes * s.nQ, 1) * Inf; repmat(u_u
 % options = optimoptions(@fmincon, 'TolFun', 0.00000001, 'MaxIter', 10000, ...
 %                        'MaxFunEvals', 100000, 'Display', 'iter', ...
 %                        'DiffMinChange', 0.001);%, 'Algorithm', 'sqp');
-options = optimoptions('fmincon','Display','iter');
+
+options = optimoptions('fmincon','Display','iter','MaxFunEvals',10000);
+
+% options=optimset('disp','iter','LargeScale','off','TolFun',.001,'MaxIter',100000,'MaxFunEvals',100000);
 % Solve for the best simulation time + control input
 x = fmincon(time_min, x0, A, b, Aeq, Beq, lb, ub, constraint_func, options);
 

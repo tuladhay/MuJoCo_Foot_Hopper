@@ -52,6 +52,6 @@ function [c, ceq] = optimization_constraints(x, s)
     end
     
     % NOT SURE ABOUT THIS!
-    ceq = [ceq; pos(s.nodes, 2)-0.85; vel(s.nodes,:)'];
+    ceq = [ceq; pos(s.nodes, 2)-0.5125; vel(s.nodes,:)'];
     
     end
