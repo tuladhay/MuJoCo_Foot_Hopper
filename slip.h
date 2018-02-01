@@ -30,6 +30,7 @@ typedef struct EoM_fields
 	double h[nQ];			// Coriolis, centripetal, gravity, spring
 	double J[6*nQ];			// Jacobian to contact point
 	double Jdot_Qdot[3*nC];		// Jdot_Qdot, contact accelerations, J*qdd + Jdot*qdot = xdd, set qdd = 0
+	double qacc[nQ];
 } EoM_fields;
 
 

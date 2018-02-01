@@ -1006,6 +1006,10 @@ void simulation(void)
             //*************************************************************************************
             //                      To get the contact forces, and contact positions
             //*************************************************************************************
+
+            // disable unless needed
+            
+            /*
             mjtNum conForce[d->ncon*6];
             mjtNum conJac[m->nv*(d->ncon*6)];
      
@@ -1043,17 +1047,26 @@ void simulation(void)
             }
             printf("\n");
 
+            */
+
             // ****************************************************************************************
             // ALTERNATIVE METHOD to get contact force:
             
+            /*
             mjtNum contactForce1[6];    // Extract 6D force:torque for one contact, in contact frame.
-            mjtNum contactForce2[6];
+            mjtNum contactForce2[6];	// 4 contacts for block
+            mjtNum contactForce3[6];
+            mjtNum contactForce4[6];
             mj_contactForce(m, d, 0, contactForce1);
             mj_contactForce(m, d, 1, contactForce2);
+            mj_contactForce(m, d, 2, contactForce3);
+            mj_contactForce(m, d, 3, contactForce4);
             // for (int i =0; i<6; i++)
             // {
                 printf("Contact force 1: %f\t", contactForce1[0]);  // [0] happens to be be the Z axis forces
                 printf("Contact force 2: %f\n", contactForce2[0]);
+                printf("Contact force 3: %f\n", contactForce3[0]);
+                printf("Contact force 4: %f\n", contactForce4[0]);
             // }
 
 
@@ -1061,9 +1074,13 @@ void simulation(void)
             //printf("Contacts : %d\n", d->ncon);
             printf("Contact Pos 1 : %f \t", d->contact[0].pos[0]);  // pos[0] is the X axis
             printf("Contact Pos 2 : %f \t\n", d->contact[1].pos[0]);
+            printf("Contact Pos 3 : %f \t\n", d->contact[2].pos[0]);
+            printf("Contact Pos 4 : %f \t\n", d->contact[3].pos[0]);
 
+            */
 
             // CALCULATING CENTER OF PRESSURE
+            /*
             mjtNum CoP;
             if (d->ncon == 2)
             {
@@ -1078,10 +1095,15 @@ void simulation(void)
                 printf("CoP : %f\n", CoP*100); // in centimeters
             } 
             // NOTE that now, the RANGE FOR CPOS is 0 to 20 (centimeters), with 10 being the ceter of the foot
-
-
+            */
+    
+            
 
             //-------------------------------- For Saving to CSV -----------------------------------
+            
+            // Disable unless needed
+            /*
+
             FILE *fp;
  
             double CoP_write;
@@ -1093,15 +1115,164 @@ void simulation(void)
             //fprintf(fp,"CoP");
             fprintf(fp,"\n%f", CoP_write);
             fclose(fp);
+            
+            */
+            
+            /**************************************************************************************
+            ***************************************************************************************
+                                Get quantities H, h, J, JdotQdot, qdd, and print
+            This was mainly to see if the qdd that I was calculating for trajectory optimization
+            constrainst was correct. By comparing these quantities from MuJoCo, and comparing qdd
+            that I am calculating in Matlab, I can check if the math is correct.
+            **************************************************************************************/
+            int nQ = m->njnt;
+            int nC = m->nsite;
+            int DOF = m->nv;
+
+            mjtNum mass[nQ*nQ];
+            mjtNum h[nQ];
+            //mjtNum J[6*nQ];             // 3*nQ for each contact point. For two contact points
+            mjtNum J[nC*DOF*nQ];      // nsites*(DOF*nQ)
+            mjtNum Jdot_Qdot[DOF*nC];     // temporarily store acceleration for each site in temp_acc[6]
+            mjtNum tempJ[3*nQ];			// was DOF*nQ
+            mjtNum temp_cacc[6];        // retrieve 6D acceleration
+            mju_zero(mass, nQ*nQ);
+            mju_zero(h, nQ);
+            mju_zero(J, nC*DOF*nQ);
+            mju_zero(Jdot_Qdot, DOF*nC);
+            mju_zero(tempJ, DOF*nQ);
+            mju_zero(temp_cacc, 6);
 
 
+            printf("\n\n************** H, h, J, JdotQdot **************\n");
+            printf("DOF: %d\n", DOF);
+            printf("Contact Sites: %d\n", nC);
 
 
+            // **********Get Mass Matrix (in array) ******
+            mj_fullM(m, mass, d->qM);
+            // d->qM is the sparse mass matrix
+            printf("\nMass Matrix H :\n");
+            for (int i = 0; i < nQ; i++)
+            {   
+                for (int j = 0; j<nQ; j++)
+                {
+                    printf("%f\t", mass[j + i*nQ]);
+                }
+                printf("\n");
+            }
 
 
+            // ******************* h terms ***************
+            printf("\nBias: \n");
+            for (int i = 0; i < nQ; i++)
+            {   // Extract coriolis, centripetal, gravity, spring terms
+                //h[i] = d->qfrc_bias[i] - d->qfrc_passive[i];
+                printf("%f\n", d->qfrc_bias[i]);
+            }
 
-            // ****************************************************************************************
-            // ****************************************************************************************
+            printf("\nPassive: \n");
+            for (int i = 0; i < nQ; i++)
+            {   // Extract coriolis, centripetal, gravity, spring terms
+                h[i] = d->qfrc_bias[i] - d->qfrc_passive[i];
+                printf("%f\n", d->qfrc_passive[i]);
+            }
+
+            // Print h terms
+            printf("\nh vector :\n");
+            for (int i = 0; i < nQ; i++)
+            {   
+                printf("%f ", h[i]);
+            }
+            printf("\n");
+
+            // **************** J and Jdot_Qdot ****************
+            for (int i = 0; i < nC; i++)		// outer loop for contact sites
+            {   // Get the Jacobian for contact site[i]
+                mj_jacSite(m, d, tempJ, NULL, i); // 3*nQ
+
+                for (int j = 0; j < 3*nQ; j++)	// has to be 3*nQ
+                {   // stack both contact jacobians into one J array
+                    J[j + i*3*nQ] = tempJ[j];
+                    //printf("%f\n", tempJ[j]);
+                }
+
+
+                // Get the contact site accelerations
+                // Compute object 6D acceleration in object-centered frame, world/local orientation. 
+                mj_objectAcceleration(m, d, mjOBJ_SITE, i, temp_cacc, 0);
+
+                // DEBUG
+                // printf("\nDebug: site temp_acc %d\n", i);
+                // for (int i = 0; i<6; i++)
+                // {
+                //     printf("%f\n", temp_cacc[i]);
+                // }
+                // END DEBUG
+
+
+                for (int j = 0; j < 3; j++) 					// range j < DOF was incorrect
+                {	// Site acceleration. Getting the linear components by doing [j+3]
+
+                    Jdot_Qdot[j + i*3] = temp_cacc[j+3];      	// index [j + i*DOF] was incorrect
+
+                    // Substract gravitational acceleration from z
+                    if (j == 2)
+                	{
+                		Jdot_Qdot[j + i*3] = Jdot_Qdot[j + i*3] - 9.8060;
+                	} 
+                }
+            }
+
+            // Print J
+            printf("\n\nJacobian\n");
+            for (int i = 0; i < nC*3; i++)        	// rows
+            {   //printf("Row%d: \t", i+1);
+                for (int j = 0; j < nQ; j++)     	// columns
+                {
+                    printf("%f\t", J[j + i*nQ]);
+                }
+                printf("\n");
+                if ((i+1)%3 == 0)	// separate the site jacobians while printing
+                	printf("\n");
+            }
+
+            // Print Jdot_Qdot
+            printf("\nJdot_Qdot, SITE acceleration\n");
+            for (int i = 0; i < 3*nC; i++)		// needs to be 3*nC was incorrect
+            {
+                printf("%f\n", Jdot_Qdot[i]);
+            }
+            printf("\n");
+
+
+            // ****************** qacc *****************
+            printf("qacc (JOINT x and z accelerations)\n");
+            for (int i =0; i < nQ; i++)
+            {
+                printf("%f\n", d->qacc[i]);
+            }
+            printf("\n");
+            printf("constraint forces\n");
+            for (int i = 0; i < d->nefc; i++)
+            {
+                printf("%f\n", d->efc_force[i]);
+            }
+
+            printf("\nqfrc constraints\n");
+            for (int i = 0; i < m->nv; i++)
+            {
+                printf("%f\n", d->qfrc_constraint[i]);
+            }
+
+
+            printf("\nq pos\n");
+            for (int i =0; i < nQ; i++)
+            {
+                printf("%f\n", d->qpos[i]);
+            }
+            printf("\n");
+
 
             // break on reset
             if( d->time<startsimtm )

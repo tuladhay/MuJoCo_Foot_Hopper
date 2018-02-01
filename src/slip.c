@@ -94,6 +94,12 @@ slip_t* init(const char *basedir)
 
     slip_t *s = calloc(1, sizeof(slip_t));
     s->d = mj_makeData(m); // d is a pointer to mjData
+
+    double qpos_init[] = {0.0, 0.512653, 0.0, 0.0, 0.002551, 0.015030, 0};
+
+    mju_copy(s->d->qpos, qpos_init, m->nq);
+    mj_forward(m, s->d);
+
     return s;
 }
 
@@ -272,14 +278,13 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 	mjtNum h[nQ];
 	mjtNum J[6*nQ];		// 3*nQ for each contact point. For two contact points
 	mjtNum Jdot_Qdot[3*nC];	// temporarily store acceleration for each site in temp_acc[6]
-	
+	mjtNum tempJ[3*nQ];
+	mjtNum temp_cacc[6];		// contact acceleration, J*qdd + Jdot*qdot = xdd, set qdd = 0
 	mju_zero(mass, nQ*nQ);
 	mju_zero(h, nQ);
 	mju_zero(J, 6*nQ);
 	mju_zero(Jdot_Qdot, 3*nC);
-	mjtNum tempJ[3*nQ];
 	mju_zero(tempJ, 3*nQ);
-	mjtNum temp_cacc[6];		// contact acceleration, J*qdd + Jdot*qdot = xdd, set qdd = 0
 	mju_zero(temp_cacc, 6);
 
 	//setting other zeros....
@@ -351,6 +356,12 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 	{
 		EoM->Jdot_Qdot[i] = Jdot_Qdot[i];
 	}
+
+	// Copy qacc into EoM
+	for (int i = 0; i < nQ; i++)
+    {
+         EoM->qacc[i] = s->d->qacc[i];
+    }
 
 
 }// get_EoM_fields

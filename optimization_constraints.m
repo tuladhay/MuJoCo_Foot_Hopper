@@ -36,11 +36,12 @@ function [c, ceq] = optimization_constraints(x, s)
         
         % Get qdd
         qdd = s.get_qdd(state);
-        % qdd for contact 1
-        qdd_c1 = qdd(:,1);
         
-        % See evernote Trajectory Optimization
-        proj_v = vel(i,:)' + qdd_c1.*delta_time;
+        % qdd for contact 1
+        % qdd_c1 = qdd(:,1);
+        
+        % Evernte Trajectory Optimization
+        proj_v = vel(i,:)' + qdd.*delta_time;
         proj_x = pos(i,:)' + proj_v.*delta_time;
         
         % fmincon's equality constraints are given as a vector of values to drive to zero
@@ -52,6 +53,7 @@ function [c, ceq] = optimization_constraints(x, s)
     end
     
     % NOT SURE ABOUT THIS!
-    ceq = [ceq; pos(s.nodes, 2)-0.5125; vel(s.nodes,:)'];
+    % CURRENTLY, END HEIGHT = START HEIGHT
+    ceq = [ceq; pos(s.nodes, 2)-0.8125; vel(s.nodes,:)'];
     
     end

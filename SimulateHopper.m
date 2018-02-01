@@ -18,8 +18,7 @@ CoP = zeros(1,nStep);
 
 initState = slipObj.blank_state();   % all states set to 0, dynamic_state = 3
 initState.q = [0,1.2,0,0.45,0,0];    %[x, y, leg_tau, leg_motor, leg_spring, foot_joint]
-% TODO: Implement switch case for starting with some positive velocity, as
-% done in point_foot
+
 slipObj.set_state(initState);
 
 for i = 1:nStep

@@ -78,6 +78,7 @@ classdef SLIP < handle
         end
         
         
+
         function state = blank_state(obj)
            state.q = zeros(1, obj.nQ);
            state.qd = state.q;
@@ -124,7 +125,8 @@ classdef SLIP < handle
             % need to make sure this is correct
 
             % Get the contact Jacobian
-            J = reshape(eom_copy.J, [obj.nQ, 6])';
+            J = reshape(eom_copy.J, [obj.nQ, 6])';  %Transpose is correct?            
+            
             % need to make sure this is correct
             % the rows 1, 2, 3 are for contact site 0
             % the rows 4, 5, 6 are for contact site 1
@@ -139,12 +141,21 @@ classdef SLIP < handle
             Tau = state.u;     % Torques
             Sa = [0; 0; 0; Tau(1); Tau(2); 0; Tau(3)]; % Selector matrix premultiplied by Tau
             I = eye(obj.nQ);
-            Hinv = pinv(H);          % Is this the correct way to take inverse?
-            JHinvJT = J*(Hinv*J');   % How to do pseudo-inverse?
-            Ns = I - J'*JHinvJT*J*Hinv;     % Ns is Ns transpose in the paper
-            gamma = J'*JHinvJT*Jdot_Qdot;
+            Hinv = inv(H);          % Is this the correct way to take inverse?
+            JHinvJT = J*Hinv*J';   % How to do pseudo-inverse?
+            Ns = I - J'*pinv(JHinvJT)*J*Hinv;
+            gamma = J'*pinv(JHinvJT)*Jdot_Qdot;
 
             qdd = Hinv*(Ns*Sa - Ns*h - gamma);      % maybe group Ns
+            
+            % *************** Calculating f just to see********************
+            site_force = pinv(JHinvJT)*( J*Hinv*h - Jdot_Qdot - J*Hinv*Sa ); % on site
+            calc_qfrc = J'*site_force;   % Fx = J'*Fq. See studywolf.
+        end
+        
+        function mj_qdd = get_mj_qacc(obj, state)
+            eom_copy = obj.get_eom(state);
+            mj_qdd = eom_copy.qacc';
         end
         
         
