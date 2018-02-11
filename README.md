@@ -14,3 +14,7 @@ I created a pycharm project with "MuJoCo_Foot_Hopper", "gym" "rllab" and "anacon
 rllab/vendor was marked in "source folders". However I dont know if it needs to be marked as such.
 
 "make" the c files.
+
+Use python 2.7 interpreter.
+
+Install whatever other libraries it does not find automatically.
