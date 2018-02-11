@@ -95,9 +95,9 @@ slip_t* init(const char *basedir)
     slip_t *s = calloc(1, sizeof(slip_t));
     s->d = mj_makeData(m); // d is a pointer to mjData
 
-    double qpos_init[] = {0.0, 0.512653, 0.0, 0.0, 0.002551, 0.015030, 0};
+    //double qpos_init[] = {0.0, 0.512653, 0.0, 0.0, 0.002551, 0.015030, 0};
 
-    mju_copy(s->d->qpos, qpos_init, m->nq);
+    //mju_copy(s->d->qpos, qpos_init, m->nq);
     mj_forward(m, s->d);
 
     return s;
@@ -276,13 +276,13 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 	// so that in the Matlab side, I can calculate qdd for the dynamic constraints
 	mjtNum mass[nQ*nQ];
 	mjtNum h[nQ];
-	mjtNum J[6*nQ];		// 3*nQ for each contact point. For two contact points
+	mjtNum J[3*nC*nQ];		// 3*nQ for each contact point. For two contact points
 	mjtNum Jdot_Qdot[3*nC];	// temporarily store acceleration for each site in temp_acc[6]
 	mjtNum tempJ[3*nQ];
 	mjtNum temp_cacc[6];		// contact acceleration, J*qdd + Jdot*qdot = xdd, set qdd = 0
 	mju_zero(mass, nQ*nQ);
 	mju_zero(h, nQ);
-	mju_zero(J, 6*nQ);
+	mju_zero(J, nC*3*nQ);
 	mju_zero(Jdot_Qdot, 3*nC);
 	mju_zero(tempJ, 3*nQ);
 	mju_zero(temp_cacc, 6);
@@ -343,6 +343,12 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 		for (int j = 0; j < 3; j++)
 		{
 			Jdot_Qdot[j + i*3] = temp_cacc[j+3];
+
+			// Substract gravitational acceleration from z
+            if (j == 2)
+        	{
+        		Jdot_Qdot[j + i*3] = Jdot_Qdot[j + i*3] - 9.8060;
+        	} 
 		}
 	}
 	// Copy J into EoM

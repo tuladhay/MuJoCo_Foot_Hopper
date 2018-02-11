@@ -1132,15 +1132,15 @@ void simulation(void)
             mjtNum mass[nQ*nQ];
             mjtNum h[nQ];
             //mjtNum J[6*nQ];             // 3*nQ for each contact point. For two contact points
-            mjtNum J[nC*DOF*nQ];      // nsites*(DOF*nQ)
-            mjtNum Jdot_Qdot[DOF*nC];     // temporarily store acceleration for each site in temp_acc[6]
+            mjtNum J[nC*3*nQ];      // nsites*(DOF*nQ)
+            mjtNum Jdot_Qdot[3*nC];     // temporarily store acceleration for each site in temp_acc[6]
             mjtNum tempJ[3*nQ];			// was DOF*nQ
             mjtNum temp_cacc[6];        // retrieve 6D acceleration
             mju_zero(mass, nQ*nQ);
             mju_zero(h, nQ);
-            mju_zero(J, nC*DOF*nQ);
-            mju_zero(Jdot_Qdot, DOF*nC);
-            mju_zero(tempJ, DOF*nQ);
+            mju_zero(J, nC*3*nQ);
+            mju_zero(Jdot_Qdot, 3*nC);
+            mju_zero(tempJ, 3*nQ); //
             mju_zero(temp_cacc, 6);
 
 

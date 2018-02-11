@@ -12,7 +12,7 @@ classdef SLIP < handle
         nC = 2;
         libName;
         deltaT = 0.002;
-        nodes = 20;
+        nodes = 50;
 
     end
     
@@ -77,7 +77,6 @@ classdef SLIP < handle
             % Also check set_state in slip.c
         end
         
-        
 
         function state = blank_state(obj)
            state.q = zeros(1, obj.nQ);
@@ -93,6 +92,12 @@ classdef SLIP < handle
         end
         
         
+        function state = run_forward(obj, s, h)
+           s = libpointer('state_t', s);
+           calllib('libslip', 'run_forward', obj.s, s, h);
+           
+           state = s.Value;
+        end
         % **************** Optimization Related Functions ****************
         % ****************************************************************
         
@@ -134,7 +139,6 @@ classdef SLIP < handle
             % J*Qdd + Jdot*Qdot = xdd, set qdd to zero, and get JdotQdot = xdd
             Jdot_Qdot = reshape(eom_copy.Jdot_Qdot, [6, 1]);
 
-            % Now I have everything I need to calculate qdd:
             % These equations are directly from Wensing paper:
             % "Generation of Dynamic Humanoid Behaviors Through Task-Space Control ..."
 
@@ -148,7 +152,10 @@ classdef SLIP < handle
 
             qdd = Hinv*(Ns*Sa - Ns*h - gamma);      % maybe group Ns
             
-            % *************** Calculating f just to see********************
+            % JUST TRYING TO SEE WHAT HAPPENS !!!!2342342@$^3457!!!!!!!!!!(&#(&#(&#(#&(#
+            %qdd = eom_copy.qacc;
+            
+            % *************** Calculating f just to see *******************
             site_force = pinv(JHinvJT)*( J*Hinv*h - Jdot_Qdot - J*Hinv*Sa ); % on site
             calc_qfrc = J'*site_force;   % Fx = J'*Fq. See studywolf.
         end
