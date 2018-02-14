@@ -11,8 +11,8 @@ classdef SLIP < handle
         nU = 3;
         nC = 2;
         libName;
-        deltaT = 0.002;
-        nodes = 50;
+%         deltaT = 0.002;
+        nodes = 150;
 
     end
     
@@ -109,16 +109,16 @@ classdef SLIP < handle
         end
         
         
-        function eom_fields = get_eom(obj, state)
-            calllib(obj.libName, 'get_EoM_fields', obj.s, state, obj.eom);
+        function eom_fields = get_eom(obj, state, delta_time)
+            calllib(obj.libName, 'get_EoM_fields', obj.s, state, obj.eom, delta_time);
             eom_fields = obj.eom.Value;
         end
         
         
-        function qdd = get_qdd(obj, state)
+        function qdd = get_qdd(obj, state, delta_time)
             % Function to get necessary quantities from MuJoCo,
             % and calculate qdd and return qdd
-            eom_copy = obj.get_eom(state);   % I know it is redundant to make copy
+            eom_copy = obj.get_eom(state, delta_time);   % I know it is redundant to make copy
             
             H = reshape(eom_copy.H, [obj.nQ, obj.nQ]);
             if (H - H')
@@ -152,17 +152,16 @@ classdef SLIP < handle
 
             qdd = Hinv*(Ns*Sa - Ns*h - gamma);      % maybe group Ns
             
-            % JUST TRYING TO SEE WHAT HAPPENS !!!!2342342@$^3457!!!!!!!!!!(&#(&#(&#(#&(#
-            %qdd = eom_copy.qacc;
             
             % *************** Calculating f just to see *******************
             site_force = pinv(JHinvJT)*( J*Hinv*h - Jdot_Qdot - J*Hinv*Sa ); % on site
             calc_qfrc = J'*site_force;   % Fx = J'*Fq. See studywolf.
         end
         
-        function mj_qdd = get_mj_qacc(obj, state)
-            eom_copy = obj.get_eom(state);
+        function [mj_qdd, mj_cvel] = get_mj_qacc(obj, state, delta_time)
+            eom_copy = obj.get_eom(state, delta_time);
             mj_qdd = eom_copy.qacc';
+            mj_cvel = eom_copy.cvel';
         end
         
         

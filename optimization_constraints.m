@@ -1,4 +1,6 @@
-function [c, ceq, g_c, g_ceq] = optimization_constraints(x, s)
+% function [c, ceq, g_c, g_ceq] = optimization_constraints(x, s)
+function [c, ceq] = optimization_constraints(x, s)
+
 
     % Calculate the timestep
     sim_time = x(1);
@@ -50,7 +52,7 @@ function [c, ceq, g_c, g_ceq] = optimization_constraints(x, s)
     
     g_ceq = [g_ceq, temp_grad];
     % *********************************************************************
-    
+    tic
     % ********** Continuous Dynamic constraints and gradients *************
     for i = 2 : (s.nodes - 1)      
 
@@ -136,7 +138,7 @@ function [c, ceq, g_c, g_ceq] = optimization_constraints(x, s)
     % has to be length of (s.nodes-1)*length(ceq_n) + length(ceq_start) +
     % length(ceq_end)
     g_ceq = [g_ceq, temp_grad];
-        
+    toc
 end % end of optimization contstraints
 
 
@@ -199,13 +201,17 @@ end % end ceq_grad
 
 
 function [calc_ceq, time_grad_pos, time_grad_vel] = point_constraints(state, next_state, s, delta_time)
-    % instead of using run_forward, i need to do this manually by getting
     % qdd and calculating proj_v and proj_x
-    qdd = s.get_qdd(state);
+    qdd = s.get_qdd(state, delta_time);
+    
     proj_v = state.qd + qdd.*delta_time;
     proj_x = state.q + proj_v.*delta_time;
+    
     calc_ceq = [next_state.q - proj_x;  next_state.qd - proj_v];
     
     time_grad_pos = (-1*proj_v)/s.nodes;
+
+    time_grad_pos = time_grad_pos*2; % HACK
+    
     time_grad_vel = (-1*qdd)/s.nodes;
 end

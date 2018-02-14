@@ -1267,11 +1267,30 @@ void simulation(void)
 
 
             printf("\nq pos\n");
-            for (int i =0; i < nQ; i++)
+            for (int i = 0; i < nQ; i++)
             {
                 printf("%f\n", d->qpos[i]);
             }
             printf("\n");
+
+
+            // CONTACT VELOCITY
+            mjtNum cvel[6];
+            mjtNum cvelxz[4];
+			mj_objectVelocity(m, d, mjOBJ_SITE, 0, cvel, 0);
+			cvelxz[0] = cvel[3];
+			cvelxz[1] = cvel[5];
+			// printf("\ncvel1\n");
+			// for (int i = 0; i < 6; i++)
+			// 	printf("%f\n", cvel[i]);
+
+			mj_objectVelocity(m, d, mjOBJ_SITE, 1, cvel, 0);
+			cvelxz[2] = cvel[3];
+			cvelxz[3] = cvel[5];
+			
+			printf("\ncvel\n");
+			for (int i = 0; i < 4; i++)
+				printf("%f\n", cvelxz[i]);
 
 
             // break on reset

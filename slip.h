@@ -31,6 +31,7 @@ typedef struct EoM_fields
 	double J[6*nQ];			// Jacobian to contact point
 	double Jdot_Qdot[3*nC];		// Jdot_Qdot, contact accelerations, J*qdd + Jdot*qdot = xdd, set qdd = 0
 	double qacc[nQ];
+	double cvel[nC*2];		// only x and z so nC*2
 } EoM_fields;
 
 
@@ -62,7 +63,7 @@ void controller(slip_t* s, state_t* state);
 double ankle_tau_COP(state_t* state, double CoP_pos);
 void get_CoP(slip_t* s, state_t* state);
 
-void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM);
+void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM, double DT);
 
 slip_vis_t *vis_init(void);
 bool vis_draw(slip_vis_t *v, slip_t *s, bool bWaitUser);

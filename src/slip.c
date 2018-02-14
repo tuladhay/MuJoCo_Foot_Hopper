@@ -270,7 +270,7 @@ void get_motor_limits(motor_limits_t *lim)
 							ALL OPTIMIZATION RELATED FUNCTIONS
 ************************************************************************************/
 
-void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
+void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM, double DT)
 {
 	// This function will return the extract the necessary EoM fields and populate it
 	// so that in the Matlab side, I can calculate qdd for the dynamic constraints
@@ -304,10 +304,15 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
 	for (int i = 0; i < nU; i++)
 		s->d->ctrl[i] = state->u[i];
 
-	mj_forward(m, s->d);
+	//mj_forward(m, s->d); // before doing iters, I was only running mj_forward once.
 	// calculates the forward dynamics
 	// this will not forward time, and update only vel and acc, not pos
 	// mj_step() calculates dynamics and forwards in time
+	int iters = (int)(DT/m->opt.timestep);
+
+	for (int i = 0; i < iters; i++)
+		mj_forward(m, s->d);
+
 
 	// Get mass matrix (actually in array)
 	mj_fullM(m, mass, s->d->qM);
@@ -368,6 +373,16 @@ void get_EoM_fields(slip_t* s, state_t* state, EoM_fields* EoM)
     {
          EoM->qacc[i] = s->d->qacc[i];
     }
+    
+    
+    // Contact Velocities
+    mjtNum cvel[6];
+	mj_objectVelocity(m, s->d, mjOBJ_SITE, 0, cvel, 0);
+	EoM->cvel[0] = cvel[3];
+	EoM->cvel[1] = cvel[5];
+	mj_objectVelocity(m, s->d, mjOBJ_SITE, 1, cvel, 0);
+	EoM->cvel[2] = cvel[3];
+	EoM->cvel[3] = cvel[5];
 
 
 }// get_EoM_fields
