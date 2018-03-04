@@ -79,14 +79,15 @@ class footHopperEnv():
 
         # ACCELERATIONS
         acc_z = self.state.qdd[1]
+        acc_spring = self.state.qdd[4]
 
         # VELOCITES
         # some_vel = self.state.q[id]
         vel_leg_motor = self.state.qd[3]
 
         # GAINS
-        kp_leg = 850
-        kd_leg = 100
+        kp_leg = 1250
+        kd_leg = 30
         kp_hip = 500
         kd_hip = 15
 
@@ -95,13 +96,15 @@ class footHopperEnv():
         L_flight = 0.5
         L_extension = 0.55
 
-        if (heel_pos>0.0 and toe_pos>0.0):
+        # Basic test for hopping
+        if (heel_pos>0.01 and toe_pos>0.01):
             leg_torque = -kp_leg*(pos_leg_motor - L_flight) - kd_leg*(vel_leg_motor)
-            self.state.u[1] = leg_torque
-            a = 1
+            self.state.u[1] = 0#leg_torque
 
-        if acc_z > 0.0 and (heel_pos<0.0 or toe_pos<0.0):
-            self.state.u[1] = -kp_leg*(pos_leg_motor - L_extension) - kd_leg*(vel_leg_motor)
+        if acc_z> 0.0 and (heel_pos<0.01 or toe_pos<0.01):
+            leg_torque = -kp_leg*(pos_leg_motor - 0.6) - kd_leg*(vel_leg_motor)
+            self.state.u[1] = leg_torque
+
 
 
 if __name__=="__main__":
