@@ -12,8 +12,10 @@ import time
 # This wraps around a C library compiled from slip.c
 # This environment will be used with rllab to test RL algorithms on the SLIP foot hopper.
 
-
-# Loading the compiled C library.
+# ********************************************************************************************************************
+#                         Python variable/function definitions to wrap with C library
+# ********************************************************************************************************************
+# Loading the compiled C library. Make sure to 'make' your C files
 lib = cdll.LoadLibrary('./libslip.so')
 c_double_p = ctypes.POINTER(ctypes.c_double)
 
@@ -46,6 +48,9 @@ hopper_vis.restype = ctypes.c_void_p
 hopper_draw = lib.vis_draw
 hopper_draw.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool]
 hopper_draw.restype = ctypes.c_bool
+
+# ********************************************************************************************************************
+# ********************************************************************************************************************
 
 
 class footHopperEnv(Env):
