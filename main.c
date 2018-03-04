@@ -77,11 +77,11 @@ int main()
 	// }
 
 
-	while (true)
-	{
-		vis_draw(v, s, false);
-        step(s, 500.0);
-	}
+	// while (true)
+	// {
+	// 	vis_draw(v, s, false);
+ //        step(s, 500.0);
+	// }
 
 
 	vis_close(v);

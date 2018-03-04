@@ -130,16 +130,24 @@ void forward(slip_t* s, state_t* state)
 	}
 }
 
-void step(slip_t* s, double action)
+void step(slip_t* s, state_t* state)
 {	
-	if (initialize)						// initialize set to False inside controller
-	{
-		set_initial_state(s);
-	}
-	s->d->ctrl[2] = action;				// Set by RL
 	
-	mj_step(m, s->d);					// pass the mjModel and mjData
-	controller(s);						// Sets s->d->ctrl[0] = u[0]; And for u[1]
+	for (int i = 0; i < nU; i++)
+		s->d->ctrl[i] = state->u[i];
+
+	mj_step(m, s->d);		// pass the mjModel and mjData
+
+	for (int i = 0; i < nQ; i++)
+	{
+		state->q[i] = s->d->qpos[i];
+		state->qd[i] = s->d->qvel[i];
+		state->qdd[i] = s->d->qacc[i];
+	}
+	state->t = s->d->time;
+	state->cpos[0] = s->d->site_xpos[2];		// foot heel z,
+	state->cpos[1] = s->d->site_xpos[5]; 		// foot toe z
+
 }
 
 void set_state(slip_t* s, state_t* state)

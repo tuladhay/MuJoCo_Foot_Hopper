@@ -17,11 +17,11 @@ typedef struct state_t {
 	double t;
 	double cpos[nC];
 
-	int dynamic_state;		// this is for the raibert hopper control
-	double des_td_angle;
-	double touchdown_time;
-	double stance_time;
-	double apex_velocity;
+	// int dynamic_state;		// this is for the raibert hopper control
+	// double des_td_angle;
+	// double touchdown_time;
+	// double stance_time;
+	// double apex_velocity;
 } state_t;
 
 
@@ -42,7 +42,7 @@ static double u[2] = {0, 0};		// leg_tau and leg_motor
 
 slip_t* init(const char *basedir);
 void forward(slip_t* s, state_t* state);
-void step(slip_t* s, double action);
+void step(slip_t* s, state_t* state);
 void set_state(slip_t* s, state_t* state);
 void run_forward(slip_t* s, state_t* state, double DT);
 void step_ctrl(slip_t* s);
