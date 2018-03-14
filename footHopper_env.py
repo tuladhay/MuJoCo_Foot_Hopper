@@ -54,6 +54,7 @@ class footHopperEnv():
         self.state = State()
         self.counter = 0
 
+    # take one dt forward in time
     def step(self):
         # Execute one or many time-step/s using action
         for _ in range(10):
@@ -86,8 +87,8 @@ class footHopperEnv():
         vel_leg_motor = self.state.qd[3]
 
         # GAINS
-        kp_leg = 1250
-        kd_leg = 30
+        kp_leg = 2250
+        kd_leg = 300
         kp_hip = 500
         kd_hip = 15
 
@@ -101,15 +102,14 @@ class footHopperEnv():
             leg_torque = -kp_leg*(pos_leg_motor - L_flight) - kd_leg*(vel_leg_motor)
             self.state.u[1] = 0#leg_torque
 
-        if acc_z> 0.0 and (heel_pos<0.01 or toe_pos<0.01):
+        if (heel_pos<0.01 and toe_pos<0.01):
             leg_torque = -kp_leg*(pos_leg_motor - 0.6) - kd_leg*(vel_leg_motor)
-            self.state.u[1] = leg_torque
-
+            self.state.u[1] = 700#leg_torque
 
 
 if __name__=="__main__":
     hopper = footHopperEnv()
-    for _ in range(1000):
+    for _ in range(5000):
         hopper.render()
         hopper.step()
         hopper.controller()
